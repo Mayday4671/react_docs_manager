@@ -16,7 +16,7 @@
 'use client';
 
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { Button, Space, Tag, Typography, Popconfirm, Tooltip, theme, Anchor } from 'antd';
+import { Button, Space, Tag, Typography, Popconfirm, Tooltip, theme, Anchor, Image } from 'antd';
 import { EditOutlined, DeleteOutlined, PushpinOutlined, PushpinFilled } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -280,6 +280,49 @@ const DocNoteViewer: React.FC<Props> = ({ note, onEdit, onDelete, onTogglePin })
   // ── 大纲拖拽缩放 ──────────────────────────────────────────
   /** 大纲面板当前宽度（px），范围 120~400 */
   const [outlineWidth, setOutlineWidth] = useState(200);
+
+  // ── 图片预览 ──────────────────────────────────────────────
+  /** 当前预览的图片 src，null 表示未打开预览 */
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  /** 预览图片列表（docx 内所有图片），用于支持翻页 */
+  const [previewList, setPreviewList] = useState<string[]>([]);
+  /** 当前预览图片在列表中的索引 */
+  const [previewIndex, setPreviewIndex] = useState(0);
+
+  /**
+   * docxHtml 渲染完成后，在容器上用事件委托监听图片点击。
+   * 收集所有图片 src 构建预览列表，点击 img 时定位到对应索引。
+   * 使用事件委托而非逐个绑定，避免 dangerouslySetInnerHTML 重渲染后事件丢失。
+   */
+  useEffect(() => {
+    if (!isDocx || !docxHtml || !contentRef.current) return;
+    const container = contentRef.current;
+
+    // 收集所有图片，构建预览列表
+    const timer = setTimeout(() => {
+      const imgs = Array.from(container.querySelectorAll<HTMLImageElement>('.doc-word-body img'));
+      setPreviewList(imgs.map(img => img.src));
+    }, 100);
+
+    // 事件委托：在容器上监听点击，判断目标是否为 img
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName !== 'IMG') return;
+      const imgs = Array.from(container.querySelectorAll<HTMLImageElement>('.doc-word-body img'));
+      const srcs = imgs.map(img => img.src);
+      const idx = imgs.indexOf(target as HTMLImageElement);
+      if (idx === -1) return;
+      setPreviewList(srcs);
+      setPreviewIndex(idx);
+      setPreviewSrc(srcs[idx]);
+    };
+
+    container.addEventListener('click', handleClick);
+    return () => {
+      clearTimeout(timer);
+      container.removeEventListener('click', handleClick);
+    };
+  }, [isDocx, docxHtml]);
   const draggingRef = useRef(false);    // 是否正在拖拽
   const startXRef = useRef(0);          // 拖拽开始时的鼠标 X 坐标
   const startWidthRef = useRef(0);      // 拖拽开始时的大纲宽度
@@ -451,6 +494,25 @@ const DocNoteViewer: React.FC<Props> = ({ note, onEdit, onDelete, onTogglePin })
           </div>
         </div>
       </div>
+
+      {/* ── 图片预览弹窗（docx 内图片点击触发，支持放大缩小、翻页） ── */}
+      {previewSrc && (
+        <div style={{ display: 'none' }}>
+          {/* Image.PreviewGroup 提供多图翻页能力，current 控制当前显示索引 */}
+          <Image.PreviewGroup
+            preview={{
+              visible: true,
+              current: previewIndex,
+              onChange: idx => setPreviewIndex(idx),
+              onVisibleChange: visible => { if (!visible) setPreviewSrc(null); },
+            }}
+          >
+            {previewList.map((src, i) => (
+              <Image key={i} src={src} alt={`图片${i + 1}`} />
+            ))}
+          </Image.PreviewGroup>
+        </div>
+      )}
     </div>
   );
 };

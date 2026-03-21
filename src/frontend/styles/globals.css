@@ -509,3 +509,8 @@ code::-webkit-scrollbar-thumb:hover,
 .doc-outline li {
   overflow: hidden !important;
 }
+
+/* Doc Notes - Word 文档内图片点击预览样式 */
+.doc-word-body img {
+  cursor: zoom-in !important;
+}
