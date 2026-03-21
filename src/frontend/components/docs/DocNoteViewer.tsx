@@ -176,15 +176,15 @@ const DocNoteViewer: React.FC<Props> = ({ note, onEdit, onDelete, onTogglePin })
    * 当笔记切换或内容变化时，若为 docx 类型则触发转换。
    *
    * 转换流程：
-   *   1. 将 base64 字符串解码为 Uint8Array（二进制数据）
-   *   2. 调用 mammoth.convertToHtml，配置图片转换器将图片内嵌为 base64 data URL
-   *   3. 将转换结果存入 docxHtml state，触发重渲染
+   *   1. base64 → Uint8Array → ArrayBuffer
+   *   2. mammoth.convertToHtml，图片内嵌为 base64 data URL
+   *   3. 用 DOMParser 解析 HTML，给所有标题元素直接注入 id（避免两步时序问题）
+   *   4. 序列化回 HTML 字符串存入 state
    */
   useEffect(() => {
     if (!isDocx || !note.content) { setDocxHtml(null); return; }
     (async () => {
       try {
-        // base64 → 二进制 → ArrayBuffer
         const binary = atob(note.content!);
         const buf = new Uint8Array(binary.length);
         for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
@@ -192,13 +192,24 @@ const DocNoteViewer: React.FC<Props> = ({ note, onEdit, onDelete, onTogglePin })
         const result = await mammoth.convertToHtml(
           { arrayBuffer: buf.buffer },
           {
-            // 将文档内嵌图片转为 base64 data URL，避免图片丢失
             convertImage: mammoth.images.imgElement(img =>
               img.read('base64').then(d => ({ src: `data:${img.contentType};base64,${d}` }))
             ),
           },
         );
-        setDocxHtml(result.value);
+
+        // 直接在 HTML 字符串里注入标题 id，避免依赖后续 DOM effect 的时序
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(result.value, 'text/html');
+        const counter: Record<string, number> = {};
+        doc.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(el => {
+          const text = el.textContent?.trim() || '';
+          const baseId = text.toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-').replace(/^-|-$/g, '');
+          counter[baseId] = (counter[baseId] || 0) + 1;
+          el.id = counter[baseId] > 1 ? `${baseId}-${counter[baseId]}` : baseId;
+        });
+        // 只取 body 内容，去掉 DOMParser 自动补全的 html/head/body 包装
+        setDocxHtml(doc.body.innerHTML);
       } catch {
         setDocxHtml('<p>文档解析失败</p>');
       }
@@ -233,13 +244,18 @@ const DocNoteViewer: React.FC<Props> = ({ note, onEdit, onDelete, onTogglePin })
   }, [note.content, isDocx, docxHtml]);
 
   /**
-   * 渲染完成后，通过 DOM 操作给正文中的标题元素按顺序打上 id。
-   *
-   * 不在 ReactMarkdown 的 components 里直接设置 id，是为了避免
-   * React 重渲染时计数器错位导致 id 与大纲不对应的问题。
+   * 切换文档时，正文区域滚动位置重置到顶部
    */
   useEffect(() => {
-    if (!contentRef.current || headings.length === 0) return;
+    if (contentRef.current) contentRef.current.scrollTop = 0;
+  }, [note.id]);
+
+  /**
+   * 渲染完成后，给正文中的标题元素按顺序打上 id（仅 markdown 需要）。
+   * docx 的标题 id 已在 mammoth 转换时直接注入 HTML，无需此步骤。
+   */
+  useEffect(() => {
+    if (isDocx || !contentRef.current || headings.length === 0) return;
     const els = contentRef.current.querySelectorAll('h1,h2,h3,h4,h5,h6');
     let idx = 0;
     els.forEach(el => {
@@ -248,7 +264,14 @@ const DocNoteViewer: React.FC<Props> = ({ note, onEdit, onDelete, onTogglePin })
         idx++;
       }
     });
-  }, [note.content, headings]);
+  }, [note.content, headings, isDocx]);
+
+  /**
+   * 切换文档时，正文区域滚动位置重置到顶部
+   */
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0;
+  }, [note.id]);
 
   // ── 代码块渲染器 ──────────────────────────────────────────
   /**
@@ -435,6 +458,7 @@ const DocNoteViewer: React.FC<Props> = ({ note, onEdit, onDelete, onTogglePin })
                 大纲
               </Text>
               <Anchor
+                key={note.id}
                 affix={false}
                 className="doc-outline"
                 // 指定滚动容器为正文区域，而非 window
