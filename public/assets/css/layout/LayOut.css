@@ -1,0 +1,220 @@
+/**
+ * 触发器
+ */ 
+.trigger {
+    padding: 0 24px;
+    font-size: 18px;
+    line-height: 64px;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+/**
+ * 触发器
+ */
+.trigger:hover {
+    color: #1890ff;
+}
+/**
+ * logo
+ */
+.logo {
+    height: 32px;
+    margin: 16px;
+    background: rgba(255, 255, 255, 0.3);
+}
+/**
+ * 布局背景
+ */         
+.site-layout .site-layout-background {
+    background: #fff;
+}
+
+/**
+ * 标签页
+ */
+.mayday-tabs .ant-tabs-nav {
+    margin: 0 !important;
+}
+/**
+ * 标签页
+ */
+.mayday-tabs .ant-tabs-nav::before {
+    border-bottom: none !important;
+}
+
+
+/**
+ * 标签页
+ */
+.mayday-tabs .ant-tabs-tab {
+    border: 1px solid #d9d9d9 !important;
+    background: #fff; /* Default light mode bg */
+    margin-right: 1px !important;
+    border-radius: 2px !important;
+    padding: 0 10px !important; /* Compact padding restored */
+    height: 26px !important;
+    line-height: 24px !important;
+    font-size: 12px !important;
+    transition: all 0.3s;
+}
+
+/* Dark mode overrides */
+.dark-tabs-wrapper .mayday-tabs .ant-tabs-tab {
+    background: #1f1f1f !important;
+    border-color: #434343 !important;
+    color: rgba(255, 255, 255, 0.65);
+}
+/**
+ * 激活标签页
+ */
+.mayday-tabs .ant-tabs-tab-active {
+    background-color: #fff !important;
+    color: var(--primary-color) !important;
+    border-color: #dee2e6 !important; /* Subtle border */
+    /* Ruoyi often uses a top highlight or just colored text */
+    position: relative;
+    font-weight: 500;
+}
+
+.dark-tabs-wrapper .mayday-tabs .ant-tabs-tab-active {
+    background-color: #141414 !important; /* Darker bg for active */
+    border-color: #303030 !important;
+    color: var(--primary-color) !important;
+}
+
+/**
+ * 激活标签页下边框
+ */
+.mayday-tabs .ant-tabs-tab-active::before {
+    content: '';
+    position: absolute;
+    bottom: -1px; /* Moved to bottom */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%; /* Don't fill width, centered */
+    height: 2px;
+    background-color: var(--primary-color);
+    transition: all 0.3s;
+}
+/**
+ * 激活标签页
+ */
+.mayday-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: var(--primary-color) !important;
+    font-weight: 500;   
+}
+/**
+ * 标签页关闭按钮
+ */
+.mayday-tabs .ant-tabs-tab-remove {
+    margin-left: 0px !important; /* Pull significantly closer */
+    margin-right: -20px !important; 
+    color: #999;
+    font-size: 10px;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    transform: scale(0.9); /* Slightly smaller icon visually */
+}
+
+.dark-tabs-wrapper .mayday-tabs .ant-tabs-tab-remove {
+    color: rgba(255, 255, 255, 0.45);
+}
+/**
+ * 标签页关闭按钮
+ */
+.mayday-tabs .ant-tabs-tab-remove:hover {
+    color: #ff4d4f; /* Simple red hover, no background */
+    background-color: transparent;
+}
+/**
+ * 激活标签页关闭按钮
+ */
+.mayday-tabs .ant-tabs-tab-active .ant-tabs-tab-remove:hover {
+    color: #ff4d4f !important;
+    background: transparent;
+}
+/**
+ * 移除激活标签页下边框
+ */
+.mayday-tabs .ant-tabs-ink-bar {
+    display: none !important;
+}
+/**
+ * 右键菜单
+ */
+.context-menu-item {
+    transition: all 0.2s;
+    border-radius: 4px;
+}
+/**
+ * 右键菜单
+ */ 
+.context-menu-item:hover {
+    background-color: var(--primary-color-bg); 
+    color: var(--primary-color) !important;
+}
+
+/**
+ * 设置面板
+ */
+.theme-settings-drawer-handle {
+    position: fixed;
+    top: 340px; /* Adjust to be visible but not blocking header */
+    right: -24px; /* Docked state: partially hidden */
+    z-index: 1002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
+    text-align: center;
+    padding-right: 24px; /* Center icon in the visible part initially */
+    padding-left: 0;
+    border-radius: 8px 0 0 8px; /* Docking effect: Rounded left only */
+    cursor: pointer;
+    pointer-events: auto;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+    background-color: var(--primary-color, #1890ff);
+    color: #fff;
+}
+/**
+ * 设置面板
+ */
+.theme-settings-drawer-handle:hover,
+.theme-settings-drawer-handle.handle-open {
+    right: 0; /* Expand on hover */
+    padding-right: 0; /* Center icon when expanded */
+}
+
+/**
+ * 设置面板
+ */
+.theme-settings-drawer-handle.handle-open {
+    /* Right position is handled inline by React for open state (378px), 
+       but we ensure padding is reset here */
+    padding-right: 0 !important; 
+}
+
+/**
+ * H5Player Segmented Control
+ */
+.player-segmented.ant-segmented .ant-segmented-item-selected {
+    background-color: var(--primary-color) !important;
+    color: #fff !important;
+}
+
+.player-segmented.ant-segmented .ant-segmented-item-selected .anticon {
+    color: #fff !important;
+}
+
+.player-segmented.ant-segmented .ant-segmented-item:hover:not(.ant-segmented-item-selected) {
+    color: var(--primary-color);
+}

@@ -1,0 +1,113 @@
+/**
+ * 布局触发器样式
+ */
+.trigger {
+    padding: 0 24px;
+    font-size: 18px;
+    line-height: 64px;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.trigger:hover {
+    color: #1890ff;
+}
+
+/**
+ * Logo 展示区
+ */
+.logo {
+    height: 32px;
+    margin: 16px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/**
+ * 标签页 (Tabs) 样式还原
+ */
+.mayday-tabs.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+    margin-right: 1px !important;
+    border: 1px solid #d9d9d9 !important;
+    background: #fff;
+    padding: 0 10px !important;
+    height: 26px !important;
+    line-height: 24px !important;
+    font-size: 12px !important;
+    border-radius: 2px !important; /* 恢复微圆角 */
+    transition: all 0.3s;
+}
+
+/* 移除我之前错误添加的蓝顶边 */
+.mayday-tabs .ant-tabs-tab-active::before {
+    display: none !important;
+}
+
+/* 激活态文字颜色 */
+.mayday-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: var(--primary-color) !important;
+}
+
+/* 隐藏默认下划线 */
+.mayday-tabs .ant-tabs-ink-bar {
+    display: none !important;
+}
+
+/**
+ * 暗黑模式适配 (根据当前 data-theme 选择性应用)
+ */
+[data-theme='dark'] .mayday-tabs.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+    background: #1f1f1f !important;
+    border-color: #303030 !important;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+[data-theme='dark'] .mayday-tabs.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
+    background: #141414 !important;
+}
+
+/**
+ * 关闭按钮
+ */
+.mayday-tabs .ant-tabs-tab-remove {
+    margin-left: 0px !important;
+    margin-right: -10px !important;
+    color: #999;
+    font-size: 10px;
+    transform: scale(0.9);
+}
+
+.mayday-tabs .ant-tabs-tab-remove:hover {
+    color: #ff4d4f;
+    background: transparent !important;
+}
+
+/**
+ * 右键菜单
+ */
+.context-menu-item:hover {
+    background-color: var(--primary-color-bg); 
+    color: var(--primary-color) !important;
+}
+
+/**
+ * 设置柄
+ */
+.theme-settings-drawer-handle {
+    position: fixed;
+    top: 340px;
+    right: -24px;
+    z-index: 1002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
+    padding-right: 24px;
+    border-radius: 8px 0 0 8px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+    background-color: var(--primary-color, #1890ff);
+    color: #fff;
+}

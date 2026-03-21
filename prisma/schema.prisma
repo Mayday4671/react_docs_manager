@@ -1,0 +1,303 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 系统表 (sys_*)
+// ============================================
+
+// 系统用户表
+model SysUser {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String   // 实际项目中应该加密存储
+  email     String?  @unique
+  phone     String?
+  avatar    String?
+  status    Int      @default(1) // 1:启用 0:禁用
+  roleId    Int?
+  role      SysRole? @relation(fields: [roleId], references: [id])
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("sys_user")
+}
+
+// 系统角色表
+model SysRole {
+  id          Int       @id @default(autoincrement())
+  roleName    String    @unique
+  roleKey     String    @unique
+  description String?
+  status      Int       @default(1)
+  users       SysUser[]
+  createdBy   Int?
+  updatedBy   Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@map("sys_role")
+}
+
+// 系统菜单表
+model SysMenu {
+  id        Int       @id @default(autoincrement())
+  key       String    @unique
+  label     String
+  icon      String?
+  path      String?   // 路由路径
+  component String?   // 组件路径
+  parentId  Int?
+  parent    SysMenu?  @relation("MenuToSubMenu", fields: [parentId], references: [id])
+  children  SysMenu[] @relation("MenuToSubMenu")
+  orderNum  Int       @default(0)
+  menuType  String    @default("M") // M:目录 C:菜单 F:按钮
+  visible   Int       @default(1)   // 1:显示 0:隐藏
+  status    Int       @default(1)   // 1:启用 0:禁用
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([parentId])
+  @@map("sys_menu")
+}
+
+// 系统配置表
+model SysConfig {
+  id         Int      @id @default(autoincrement())
+  configKey  String   @unique
+  configValue String
+  configType String   @default("system") // system, business
+  remark     String?
+  createdBy  Int?
+  updatedBy  Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@map("sys_config")
+}
+
+// 系统日志表
+model SysLog {
+  id         Int      @id @default(autoincrement())
+  module     String   // 模块名称
+  action     String   // 操作类型: CREATE, UPDATE, DELETE, LOGIN, LOGOUT
+  method     String?  // 请求方法: GET, POST, PUT, DELETE
+  url        String?  // 请求URL
+  ip         String?  // IP地址
+  userAgent  String?  // 用户代理
+  params     String?  // 请求参数(JSON)
+  result     String?  // 操作结果
+  errorMsg   String?  // 错误信息
+  costTime   Int?     // 耗时(ms)
+  userId     Int?     // 操作用户ID
+  username   String?  // 操作用户名
+  status     Int      @default(1) // 1:成功 0:失败
+  createdAt  DateTime @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("sys_log")
+}
+
+// ============================================
+// 业务表 (tbl_*)
+// ============================================
+
+// 通知公告表
+model TblNotification {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  type      String   @default("info") // info, success, warning, error
+  priority  Int      @default(0)      // 优先级: 0-普通 1-重要 2-紧急
+  status    Int      @default(1)      // 1:已发布 0:草稿
+  readCount Int      @default(0)      // 阅读次数
+  publishAt DateTime?                 // 发布时间
+  expireAt  DateTime?                 // 过期时间
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([type])
+  @@index([status])
+  @@index([publishAt])
+  @@map("tbl_notification")
+}
+
+// 更新日志表
+model TblChangelog {
+  id        Int      @id @default(autoincrement())
+  version   String   @unique
+  title     String
+  content   String?
+  type      String   @default("feature") // feature, bugfix, improvement, breaking
+  status    Int      @default(1)         // 1:已发布 0:草稿
+  publishAt DateTime?
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([version])
+  @@index([publishAt])
+  @@map("tbl_changelog")
+}
+
+// 文件上传记录表
+model TblFile {
+  id           Int      @id @default(autoincrement())
+  fileName     String   // 原始文件名
+  fileSize     Int      // 文件大小(字节)
+  fileType     String   // 文件类型/MIME
+  fileExt      String   // 文件扩展名
+  filePath     String   // 存储路径
+  fileUrl      String   // 访问URL
+  storageType  String   @default("local") // local, oss, cos
+  uploadBy     Int?     // 上传用户ID
+  uploadIp     String?  // 上传IP
+  status       Int      @default(1) // 1:正常 0:已删除
+  downloadCount Int     @default(0) // 下载次数
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([uploadBy])
+  @@index([fileType])
+  @@map("tbl_file")
+}
+
+// ============================================
+// 文档笔记相关表 (doc_*)
+// ============================================
+
+// 文档分类表
+model DocCategory {
+  id          Int           @id @default(autoincrement())
+  name        String        // 分类名称
+  description String?       // 分类描述
+  icon        String?       // 分类图标
+  parentId    Int?          // 父分类ID
+  parent      DocCategory?  @relation("CategoryToSub", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children    DocCategory[] @relation("CategoryToSub")
+  orderNum    Int           @default(0)
+  status      Int           @default(1)
+  notes       DocNote[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([parentId])
+  @@map("doc_category")
+}
+
+// 文档笔记表
+model DocNote {
+  id          Int          @id @default(autoincrement())
+  title       String       // 标题
+  content     String?      // Markdown 内容
+  categoryId  Int          // 所属分类
+  category    DocCategory  @relation(fields: [categoryId], references: [id])
+  tags        String?      // 标签，逗号分隔
+  pinned      Int          @default(0) // 是否置顶
+  status      Int          @default(1)
+  createdBy   Int?
+  updatedBy   Int?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([categoryId])
+  @@map("doc_note")
+}
+
+// ============================================
+// 海康威视 API 相关表 (hk_*)
+// ============================================
+
+// 海康API分类表
+model HkApiCategory {
+  id          Int             @id @default(autoincrement())
+  name        String          // 分类名称，如：设备管理、视频管理、用户管理
+  description String?         // 分类描述
+  icon        String?         // 分类图标
+  parentId    Int?            // 父分类ID，null表示顶级分类
+  parent      HkApiCategory?  @relation("CategoryToSubCategory", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children    HkApiCategory[] @relation("CategoryToSubCategory")
+  orderNum    Int             @default(0) // 排序号
+  status      Int             @default(1) // 1:启用 0:禁用
+  apis        HkApi[]         // 关联的API列表
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  @@index([parentId])
+  @@map("hk_api_category")
+}
+
+// 海康API接口表
+model HkApi {
+  id          Int           @id @default(autoincrement())
+  name        String        // API名称
+  path        String        // API路径，如：/artemis/api/resource/v1/cameras
+  method      String        // 请求方法：GET, POST, PUT, DELETE
+  description String?       // API描述
+  summary     String?       // API摘要
+  categoryId  Int           // 所属分类ID
+  category    HkApiCategory @relation(fields: [categoryId], references: [id])
+  
+  // 请求参数
+  requestHeaders String?     // 请求头参数(JSON格式)
+  requestParams  String?     // 请求参数(JSON格式)
+  requestBody    String?     // 请求体示例(JSON格式)
+  
+  // 响应参数
+  responseExample String?    // 响应示例(JSON格式)
+  responseSchema  String?    // 响应结构说明(JSON格式)
+  
+  // 其他信息
+  version     String?       // API版本
+  deprecated  Int @default(0) // 是否弃用：1-是 0-否
+  needAuth    Int @default(1) // 是否需要认证：1-是 0-否
+  rateLimit   String?       // 限流说明
+  notes       String?       // 备注说明
+  
+  // 使用统计
+  callCount   Int @default(0) // 调用次数
+  lastCall    DateTime?     // 最后调用时间
+  
+  status      Int @default(1) // 1:启用 0:禁用
+  createdBy   Int?
+  updatedBy   Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([categoryId])
+  @@index([method])
+  @@index([path])
+  @@map("hk_api")
+}
+
+// 海康API调试配置表
+model HkApiConfig {
+  id          Int      @id @default(autoincrement())
+  name        String   // 配置名称，如：内网环境、外网环境
+  baseUrl     String   // 目标地址，如：http://127.0.0.1:80
+  appKey      String   // 应用Key
+  appSecret   String   // 应用密钥
+  description String?  // 配置描述
+  isDefault   Int      @default(0) // 是否默认配置：1-是 0-否
+  status      Int      @default(1) // 1:启用 0:禁用
+  createdBy   Int?
+  updatedBy   Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("hk_api_config")
+}

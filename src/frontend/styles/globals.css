@@ -1,0 +1,511 @@
+/* Global reset and structure */
+html,
+body,
+#root,
+#__next {
+  height: 100%;
+}
+
+body {
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ========================================
+   全局滚动条样式 - 支持主题色动态调整
+   ======================================== */
+
+/* Webkit 浏览器滚动条 (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+  margin: 2px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color, #1890ff);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.2s ease;
+  min-height: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color-hover, #40a9ff);
+  transform: scaleX(1.2);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--primary-color-active, #096dd9);
+  transform: scaleX(1.1);
+}
+
+::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* 深色主题滚动条 */
+.dark-theme ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dark-theme ::-webkit-scrollbar-thumb {
+  background: var(--primary-color, #1890ff);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme ::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color-hover, #40a9ff);
+  box-shadow: 0 2px 12px rgba(24, 144, 255, 0.4);
+}
+
+.dark-theme ::-webkit-scrollbar-corner {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Firefox 滚动条 */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color, #1890ff) rgba(0, 0, 0, 0.04);
+}
+
+.dark-theme {
+  scrollbar-color: var(--primary-color, #1890ff) rgba(255, 255, 255, 0.08);
+}
+
+/* 特殊区域滚动条优化 */
+
+/* 表格滚动条 */
+.ant-table-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.ant-table-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 3px;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb {
+  background: rgba(24, 144, 255, 0.4);
+  border-radius: 3px;
+  border: none;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(24, 144, 255, 0.6);
+}
+
+/* 抽屉和模态框滚动条 */
+.ant-drawer-body::-webkit-scrollbar,
+.ant-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ant-drawer-body::-webkit-scrollbar-thumb,
+.ant-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(24, 144, 255, 0.5);
+  border-radius: 3px;
+}
+
+/* 下拉菜单滚动条 */
+.ant-select-dropdown::-webkit-scrollbar,
+.ant-dropdown-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ant-select-dropdown::-webkit-scrollbar-thumb,
+.ant-dropdown-menu::-webkit-scrollbar-thumb {
+  background: rgba(24, 144, 255, 0.3);
+  border-radius: 2px;
+}
+
+/* 代码块滚动条 */
+pre::-webkit-scrollbar,
+code::-webkit-scrollbar,
+.ant-typography pre::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+pre::-webkit-scrollbar-track,
+code::-webkit-scrollbar-track,
+.ant-typography pre::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 2px;
+}
+
+pre::-webkit-scrollbar-thumb,
+code::-webkit-scrollbar-thumb,
+.ant-typography pre::-webkit-scrollbar-thumb {
+  background: rgba(24, 144, 255, 0.4);
+  border-radius: 2px;
+}
+
+pre::-webkit-scrollbar-thumb:hover,
+code::-webkit-scrollbar-thumb:hover,
+.ant-typography pre::-webkit-scrollbar-thumb:hover {
+  background: rgba(24, 144, 255, 0.6);
+}
+
+/* 内容区域滚动条 */
+.ant-layout-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ant-layout-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ant-layout-content::-webkit-scrollbar-thumb {
+  background: var(--primary-color, #1890ff);
+  border-radius: 4px;
+  border: 2px solid var(--color-bg-layout, #f0f2f5);
+}
+
+.ant-layout-content::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color-hover, #40a9ff);
+}
+
+/* 移动端滚动优化 */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    border-radius: 2px;
+    border: none;
+    min-height: 15px;
+  }
+  
+  .ant-table-body::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+}
+
+/* 平板端滚动优化 */
+@media (max-width: 1024px) and (min-width: 769px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+/* 滚动条动画效果 */
+@keyframes scrollbar-glow {
+  0% {
+    box-shadow: 0 0 0 rgba(24, 144, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(24, 144, 255, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(24, 144, 255, 0);
+  }
+}
+
+::-webkit-scrollbar-thumb:active {
+  animation: scrollbar-glow 0.3s ease-out;
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+  ::-webkit-scrollbar-thumb {
+    background: var(--primary-color, #1890ff);
+    border: 2px solid var(--color-bg-container, #ffffff);
+  }
+}
+
+/* 减少动画模式支持 */
+@media (prefers-reduced-motion: reduce) {
+  ::-webkit-scrollbar-thumb {
+    transition: none;
+    transform: none;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    transform: none;
+    animation: none;
+  }
+  
+  ::-webkit-scrollbar-thumb:active {
+    animation: none;
+  }
+}
+
+/* Original LayOut Styles (Merged from LayOut.css) */
+.trigger {
+  padding: 0 24px;
+  font-size: 18px;
+  line-height: 64px;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.trigger:hover {
+  color: #1890ff;
+}
+
+.logo {
+  height: 32px;
+  margin: 16px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.mayday-tabs .ant-tabs-nav {
+  margin: 0 !important;
+}
+
+.mayday-tabs .ant-tabs-nav::before {
+  border-bottom: none !important;
+}
+
+.mayday-tabs .ant-tabs-tab {
+  border: 1px solid #d9d9d9 !important;
+  background: #fff;
+  margin-right: 1px !important;
+  border-radius: 2px !important;
+  padding: 0 10px !important;
+  height: 26px !important;
+  line-height: 24px !important;
+  font-size: 12px !important;
+  transition: all 0.3s;
+}
+
+.dark-tabs-wrapper .mayday-tabs .ant-tabs-tab {
+  background: #1f1f1f !important;
+  border-color: #434343 !important;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.mayday-tabs .ant-tabs-tab-active {
+  background-color: #fff !important;
+  color: var(--primary-color) !important;
+  border-color: #dee2e6 !important;
+  position: relative;
+  font-weight: 500;
+}
+
+.dark-tabs-wrapper .mayday-tabs .ant-tabs-tab-active {
+  background-color: #141414 !important;
+  border-color: #303030 !important;
+  color: var(--primary-color) !important;
+}
+
+.mayday-tabs .ant-tabs-tab-active::before {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 2px;
+  background-color: var(--primary-color);
+  transition: all 0.3s;
+}
+
+.mayday-tabs .ant-tabs-tab-remove {
+  margin-left: 2px !important;
+  margin-right: -10px !important;
+  color: #999;
+  font-size: 10px;
+  transition: all 0.2s;
+}
+
+.mayday-tabs .ant-tabs-tab-remove:hover {
+  color: #ff4d4f;
+  background-color: transparent !important;
+}
+
+.mayday-tabs .ant-tabs-ink-bar {
+  display: none !important;
+}
+
+/* Context Menu */
+.context-menu-item:hover {
+  background-color: var(--primary-color-bg); 
+  color: var(--primary-color) !important;
+}
+
+.theme-settings-drawer-handle {
+  position: fixed;
+  top: 340px;
+  right: -24px;
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  font-size: 16px;
+  padding-right: 24px;
+  border-radius: 8px 0 0 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+  background-color: var(--primary-color, #1890ff);
+  color: #fff;
+}
+
+.theme-settings-drawer-handle:hover,
+.theme-settings-drawer-handle.handle-open {
+  right: 0;
+  padding-right: 0;
+}
+
+/* Player Styles */
+.player-segmented.ant-segmented .ant-segmented-item-selected {
+  background-color: var(--primary-color) !important;
+  color: #fff !important;
+}
+
+/* ========================================
+   暗色主题 Menu 样式覆盖
+   ======================================== */
+
+/* 暗色主题下的菜单背景色 */
+.dark-theme .ant-menu-dark,
+.dark-theme .ant-menu-dark .ant-menu-sub {
+  background: #1f1f1f !important;
+}
+
+/* 暗色主题下的子菜单背景色 */
+.dark-theme .ant-menu-dark .ant-menu-inline.ant-menu-sub {
+  background: #1f1f1f !important;
+}
+
+/* 暗色主题下的菜单项背景色 */
+.dark-theme .ant-menu-dark .ant-menu-item,
+.dark-theme .ant-menu-dark .ant-menu-submenu-title {
+  background: transparent !important;
+}
+
+/* 暗色主题下的菜单项悬停背景色 */
+.dark-theme .ant-menu-dark .ant-menu-item:hover,
+.dark-theme .ant-menu-dark .ant-menu-submenu-title:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 暗色主题下的选中菜单项背景色 */
+.dark-theme .ant-menu-dark .ant-menu-item-selected {
+  background: var(--primary-color) !important;
+}
+
+/* 暗色主题下的展开子菜单背景色 */
+.dark-theme .ant-menu-dark .ant-menu-submenu-open {
+  background: transparent !important;
+}
+
+/* ========================================
+   Tree 组件样式优化
+   ======================================== */
+
+/* 强制限制Tree节点内容宽度 */
+.ant-tree .ant-tree-node-content-wrapper {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* 超长文本省略号显示 */
+.ant-tree .ant-tree-title {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+/* 确保Tree节点不会超出容器 */
+.ant-tree-treenode {
+  width: 100% !important;
+}
+
+
+
+/* ========================================
+   文档笔记 Markdown 渲染样式
+   ======================================== */
+.doc-markdown-body h1,
+.doc-markdown-body h2,
+.doc-markdown-body h3,
+.doc-markdown-body h4 {
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+.doc-markdown-body p { margin: 0.6em 0; }
+.doc-markdown-body code {
+  background: rgba(128,128,128,0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: 'Fira Code', 'Consolas', monospace;
+}
+.doc-markdown-body pre {
+  background: transparent;
+  border-radius: 8px;
+  padding: 0;
+  overflow-x: auto;
+}
+.doc-markdown-body pre code {
+  background: transparent;
+  padding: 0;
+}
+.doc-markdown-body blockquote {
+  border-left: 4px solid var(--primary-color, #1677ff);
+  margin: 0.8em 0;
+  padding: 4px 16px;
+  opacity: 0.85;
+}
+.doc-markdown-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.8em 0;
+}
+.doc-markdown-body th,
+.doc-markdown-body td {
+  border: 1px solid var(--border-color, #d9d9d9);
+  padding: 6px 12px;
+}
+.doc-markdown-body th { background: rgba(128,128,128,0.08); font-weight: 600; }
+.doc-markdown-body img { max-width: 100%; border-radius: 6px; }
+.doc-markdown-body a { color: var(--primary-color, #1677ff); }
+.doc-markdown-body ul, .doc-markdown-body ol { padding-left: 1.5em; }
+.doc-markdown-body hr { border: none; border-top: 1px solid var(--border-color, #d9d9d9); margin: 1.2em 0; }
+
+/* 文档笔记树节点 hover 显示操作按钮 */
+.doc-notes-tree .ant-tree-node-content-wrapper:hover .tree-node-more {
+  opacity: 0.5 !important;
+}
+.doc-notes-tree .ant-tree-node-content-wrapper .tree-node-more:hover {
+  opacity: 1 !important;
+}
+
+/* Doc Notes - Anchor outline nowrap */
+.doc-outline a {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: block !important;
+  max-width: 100% !important;
+}
+.doc-outline li {
+  overflow: hidden !important;
+}

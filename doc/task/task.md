@@ -1,0 +1,31 @@
+# Tasks
+
+- [x] Enahnce H5Player V22 (Flicker & Visual Stability Fix) [x]
+  - [x] Implement Debounced Resize to prevent layout jitter <!-- id: 68 -->
+  - [x] Optimize container background for seamless transitions <!-- id: 69 -->
+- [x] Enahnce H5Player V21 (Auto-Resize Fix) [x]
+  - [x] Implement ResizeObserver for H5Player container <!-- id: 66 -->
+  - [x] Trigger JS_Resize on visibility/layout change <!-- id: 67 -->
+
+- [x] Enahnce Home Page V20 (Keep-Alive Tab Fix) [x]
+  - [x] Refactor LayOut.tsx to use multiple-container rendering (Keep-Alive) <!-- id: 64 -->
+  - [x] Optimize memory by conditionally rendering children visibility <!-- id: 65 -->
+- [x] Enahnce Home Page V19 (Full Mobile/Tablet Reconstruction) [x]
+- [x] Enahnce Home Page V18 (Chart Auto-Resize Fix) [x]
+- [x] Enahnce Home Page V17 (Multi-Device Responsive Strategy) [x]
+- [x] Enahnce Home Page V16 (Responsive & Chart Visibility Fix) [x]
+- [x] Enahnce Home Page V15 (Final Precise Layout) [x]
+- [x] Enahnce Home Page V14 (Layout Restoration & Stability) [x]
+- [x] Enahnce Home Page V12 (True Responsive Overhaul) [x]
+- [x] Enahnce Home Page V11 (Precise Height Sensing) [x]
+- [x] Enahnce Home Page V10 (Dynamic Height Calculation) [x]
+- [x] Enahnce Home Page V9 (Data Expansion & Internal Scroll) [x]
+- [x] Enahnce Home Page V8 (Final Polish) [x]
+- [x] Enahnce Home Page V7 (Alert Style & Fix) [x]
+- [x] Enahnce Home Page V6 (Visual Polish) [x]
+- [x] Enahnce Home Page V5 (Content Expansion) [x]
+- [x] Enahnce Home Page V4 (Compact Logic) [x]
+- [x] Enahnce Home Page V3 (Final Polish) [x]
+- [x] Enahnce Home Page V2 [x]
+- [x] Refine H5Player UI <!-- id: 7 -->
+- [x] Theme Logo Integration <!-- id: 12 -->
