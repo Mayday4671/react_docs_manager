@@ -203,7 +203,8 @@ model DocCategory {
 model DocNote {
   id          Int          @id @default(autoincrement())
   title       String       // 标题
-  content     String?      // Markdown 内容
+  content     String?      // Markdown 内容 或 base64 原始文件
+  fileType    String?      // 文件类型：md | docx | xlsx | sh | bat 等
   categoryId  Int          // 所属分类
   category    DocCategory  @relation(fields: [categoryId], references: [id])
   tags        String?      // 标签，逗号分隔

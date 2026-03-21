@@ -1,5 +1,8 @@
 "use client";
 
+// 必须在所有 antd 模块之前导入，在 antd 版本检查执行前 patch React.version
+import '@/frontend/utils/antdReactPatch';
+
 import React from 'react';
 import { ConfigProvider, App, theme } from 'antd';
 import { ThemeContext } from './ThemeContext';

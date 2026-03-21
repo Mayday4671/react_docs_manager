@@ -1,6 +1,11 @@
 # dependencies
 node_modules/
 
+# Kiro agent skills
+.agent/
+.agents/
+.gemini/
+
 # Next.js build output
 .next/
 out/
