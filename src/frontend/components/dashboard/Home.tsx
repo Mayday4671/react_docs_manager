@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Row, Col, Card, Typography, Space, theme, message, Button, Grid } from 'antd';
 import { 
     VideoCameraOutlined, 
@@ -27,8 +27,6 @@ const Home: React.FC = () => {
     const noticeBodyRef = useRef<HTMLDivElement>(null);
     const changelogBodyRef = useRef<HTMLDivElement>(null);
     
-    // 用于强制图表重绘的状态
-    const [chartKey, setChartKey] = useState(0);
     const [visibleCounts, setVisibleCounts] = useState({ notice: 5, changelog: 5 });
 
     // 状态判定
@@ -49,29 +47,40 @@ const Home: React.FC = () => {
         const ITEM_HEIGHT = 50;
         if (typeof window === 'undefined') return;
 
-        const observer = new ResizeObserver((entries) => {
-            setChartKey(prev => prev + 1);
+        let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+        const handleResize = (entries: ResizeObserverEntry[]) => {
             if (isMobile) return;
 
-            for (let entry of entries) {
-                if (entry.target === noticeBodyRef.current || entry.target === changelogBodyRef.current) {
-                    const h = entry.contentRect.height;
-                    const count = Math.floor((h - 4) / ITEM_HEIGHT);
-                    if (entry.target === noticeBodyRef.current) {
-                        setVisibleCounts(prev => ({ ...prev, notice: Math.max(1, count) }));
-                    } else if (entry.target === changelogBodyRef.current) {
-                        setVisibleCounts(prev => ({ ...prev, changelog: Math.max(1, count) }));
+            // 防抖处理，避免频繁更新
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                for (let entry of entries) {
+                    if (entry.target === noticeBodyRef.current || entry.target === changelogBodyRef.current) {
+                        const h = entry.contentRect.height;
+                        const count = Math.floor((h - 4) / ITEM_HEIGHT);
+                        if (entry.target === noticeBodyRef.current) {
+                            setVisibleCounts(prev => ({ ...prev, notice: Math.max(1, count) }));
+                        } else if (entry.target === changelogBodyRef.current) {
+                            setVisibleCounts(prev => ({ ...prev, changelog: Math.max(1, count) }));
+                        }
                     }
                 }
-            }
-        });
+            }, 150);
+        };
+
+        const observer = new ResizeObserver(handleResize);
 
         if (noticeBodyRef.current) observer.observe(noticeBodyRef.current);
         if (changelogBodyRef.current) observer.observe(changelogBodyRef.current);
+        // 监听主容器尺寸变化以触发列表区域重计算
         const mainContainer = document.getElementById('home-main-container');
         if (mainContainer) observer.observe(mainContainer);
 
-        return () => observer.disconnect();
+        return () => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            observer.disconnect();
+        };
     }, [isMobile]);
 
     const handleCardClick = (key: string) => {
@@ -153,33 +162,85 @@ const Home: React.FC = () => {
             <Row gutter={[isMobile ? 8 : 12, isMobile ? 8 : 12]} style={{ marginBottom: isMobile ? 12 : 16, flex: isMobile ? 'none' : 1.2, minHeight: 0 }}>
                 <Col xs={24} lg={16} style={{ height: isMobile ? 260 : '100%' }}>
                     <Card title="访问趋势压力 (24h)" style={cardStyle} styles={{ body: { flex: 1, padding: '8px 12px', minHeight: 0, overflow: 'hidden' } }}>
-                        <div style={{ width: '100%', height: '100%' }}>
+                        <div style={{ width: '100%', height: '100%', position: 'relative' }}>
                             <Area 
-                                key={`area-${chartKey}`} 
                                 data={areaData} 
                                 xField="time" 
                                 yField="value" 
                                 autoFit 
                                 padding={[20, 20, 35, 35]} 
                                 colorField="#1890ff"
-                                {...({ shapeField: 'smooth' } as any)}
+                                {...({
+                                    shapeField: 'smooth',
+                                    style: {
+                                        fill: 'linear-gradient(-90deg, rgba(24,144,255,0.25) 0%, rgba(24,144,255,0.02) 100%)',
+                                        stroke: '#1890ff',
+                                        strokeWidth: 2,
+                                    },
+                                    axis: {
+                                        x: {
+                                            line: true,
+                                            lineStroke: '#e8e8e8',
+                                            labelFontSize: 11,
+                                            labelFill: '#8c8c8c',
+                                            tickStroke: '#e8e8e8',
+                                        },
+                                        y: {
+                                            labelFontSize: 11,
+                                            labelFill: '#8c8c8c',
+                                            gridStroke: '#f0f0f0',
+                                            gridStrokeDasharray: '3,3',
+                                        },
+                                    },
+                                    interaction: {
+                                        tooltip: {
+                                            crosshairs: true,
+                                            crosshairsStroke: '#1890ff',
+                                            crosshairsStrokeOpacity: 0.25,
+                                        },
+                                    },
+                                    animate: { enter: { type: 'fadeIn', duration: 800 } },
+                                } as any)}
                             />
                         </div>
                     </Card>
                 </Col>
                 <Col xs={24} lg={8} style={{ height: isMobile ? 260 : '100%' }}>
                     <Card title="设备状态概览" style={cardStyle} styles={{ body: { flex: 1, padding: '8px 12px', minHeight: 0, overflow: 'hidden' } }}>
-                        <div style={{ width: '100%', height: '100%' }}>
+                        <div style={{ width: '100%', height: '100%', position: 'relative' }}>
                             <Pie 
-                                key={`pie-${chartKey}`} 
                                 data={pieData} 
                                 angleField="value" 
                                 colorField="type" 
-                                radius={1} 
+                                radius={0.85} 
                                 innerRadius={0.6} 
                                 autoFit 
                                 padding={[10, 10, 10, 10]} 
-                                {...({ theme: { paletteQualitative10: ['#1890ff', '#d9d9d9', '#ff4d4f'] } } as any)}
+                                {...({
+                                    theme: { paletteQualitative10: ['#1890ff', '#d9d9d9', '#ff4d4f'] },
+                                    label: {
+                                        text: 'type',
+                                        position: 'outside',
+                                        fontSize: 12,
+                                        fill: '#595959',
+                                        connector: true,
+                                    },
+                                    legend: {
+                                        color: {
+                                            position: 'bottom',
+                                            layout: { justifyContent: 'center' },
+                                            itemLabelFontSize: 12,
+                                        },
+                                    },
+                                    statistic: {
+                                        title: { content: '设备总数', style: { fontSize: 12, color: '#8c8c8c' } },
+                                        content: { content: '65', style: { fontSize: 22, fontWeight: 700, color: '#262626' } },
+                                    },
+                                    interaction: {
+                                        elementHighlight: true,
+                                    },
+                                    animate: { enter: { type: 'waveIn', duration: 800 } },
+                                } as any)}
                             />
                         </div>
                     </Card>

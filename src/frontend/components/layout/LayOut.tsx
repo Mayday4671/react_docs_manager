@@ -24,15 +24,17 @@ import {
   ApiOutlined,
   FolderOpenOutlined,
   BookOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
-import { Button, Layout, Menu, theme, Tabs, Breadcrumb, Spin } from "antd";
+import { Button, Layout, Menu, theme, Tabs, Breadcrumb, Spin, Tooltip } from "antd";
 import type { MenuProps } from 'antd';
-const reactLogo = "/react.svg"; // Next.js standard: reference public assets as strings
+const reactLogo = "/react.svg";
 import "@/frontend/styles/globals.css"; 
-import "@/frontend/styles/LayOut.css"; // 引入布局专有样式
+import "@/frontend/styles/LayOut.css";
 import { useTheme } from "@/frontend/context/ThemeContext";
 import ThemeSettings from "./ThemeSettings";
 import { getComponentByKey } from "@/frontend/config/componentMap";
+import GlobalSearch from "@/frontend/components/search/GlobalSearch";
 
 const { Header, Sider, Content } = Layout;
 
@@ -124,7 +126,8 @@ const LayOut: React.FC = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuData, setMenuData] = useState<DbMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [systemName, setSystemName] = useState('My App'); // 系统名称状态
+  const [systemName, setSystemName] = useState('My App');
+  const [searchOpen, setSearchOpen] = useState(false);
   
   const {
     token, // 获取完整token
@@ -206,8 +209,41 @@ const LayOut: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // 菜单项
-  const menuItems = transformMenuData(menuData);
+  // 全局搜索快捷键 Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // 动态覆盖 antd 表格的 scrollbar-color，使其跟随主题色
+  useEffect(() => {
+    const styleId = 'antd-table-scrollbar-override';
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `
+      .ant-table-wrapper .ant-table {
+        scrollbar-color: ${token.colorPrimary} ${darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'} !important;
+        scrollbar-width: thin !important;
+      }
+      .ant-table-wrapper .ant-table-body {
+        scrollbar-color: ${token.colorPrimary} ${darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'} !important;
+        scrollbar-width: thin !important;
+      }
+    `;
+    return () => {
+      styleEl?.remove();
+    };
+  }, [token.colorPrimary, darkMode]);
 
   /**
  * 监听点击事件与导航事件
@@ -258,7 +294,7 @@ const LayOut: React.FC = () => {
             document.removeEventListener('mousedown', handleClickOutside);
         }
     };
-  }, [settingsOpen, menuItems, items, activeKey]); // 增加依赖以确保 onMenuClick 闭包正确
+  }, [settingsOpen, items, activeKey]); // menuItems 不是独立变量，从依赖中移除
 
   /**
    * 菜单点击事件
@@ -431,6 +467,9 @@ const LayOut: React.FC = () => {
       setContextMenu(prev => ({ ...prev, visible: false }));
   };
 
+  // 菜单项
+  const menuItems = transformMenuData(menuData);
+
   // 如果正在加载菜单数据，显示加载状态
   if (loading) {
     return (
@@ -490,7 +529,14 @@ const LayOut: React.FC = () => {
                 }} />
                 <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{systemName}</span>
             </div>
-            <div></div>
+            <Tooltip title="全局搜索 (Ctrl+K)">
+              <Button
+                type="text"
+                icon={<SearchOutlined />}
+                onClick={() => setSearchOpen(true)}
+                style={{ color: token.colorTextSecondary }}
+              />
+            </Tooltip>
         </Header>
       )}
 
@@ -526,7 +572,6 @@ const LayOut: React.FC = () => {
                   theme={darkMode ? 'dark' : 'light'}
                   mode="inline"
                   selectedKeys={[activeKey]} 
-                  defaultOpenKeys={["hk-test"]}
                   items={menuItems}
                   onClick={onMenuClick}
                   style={{ 
@@ -586,7 +631,14 @@ const LayOut: React.FC = () => {
                     </div>
                   )}
                   
-                  <div></div>
+                  <Tooltip title="全局搜索 (Ctrl+K)">
+                    <Button
+                      type="text"
+                      icon={<SearchOutlined />}
+                      onClick={() => setSearchOpen(true)}
+                      style={{ color: token.colorTextSecondary }}
+                    />
+                  </Tooltip>
                 </Header>
             )}
 
@@ -677,10 +729,10 @@ const LayOut: React.FC = () => {
               style={{
                 margin: "16px", 
                 padding: 0,
-                minHeight: 280,
+                flex: 1,
                 background: 'transparent',
                 borderRadius: borderRadiusLG,
-                overflow: 'auto',
+                overflow: 'hidden',
                 position: 'relative'
               }}
             >
@@ -689,7 +741,9 @@ const LayOut: React.FC = () => {
                  background: colorBgContainer,
                  borderRadius: borderRadiusLG,
                  padding: 24,
-                 minHeight: 'calc(100vh - 200px)',
+                 height: '100%',
+                 boxSizing: 'border-box',
+                 overflow: 'hidden',
                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)'
                }}>
                  {/* V20 Keep-Alive: 同时渲染所有已打开的标签页，通过 display 控制显示隐藏 */}
@@ -714,6 +768,13 @@ const LayOut: React.FC = () => {
             open={settingsOpen} 
             onClose={() => setSettingsOpen(false)}
             onToggle={() => setSettingsOpen(!settingsOpen)}
+        />
+        <GlobalSearch
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          onNavigate={(key) => {
+            onMenuClick?.({ key } as any);
+          }}
         />
     </Layout>
   );

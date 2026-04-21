@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Table, Button, Space, Modal, message, Tag, Card, 
-  Select, DatePicker, Input, Row, Col, Statistic 
+  Select, DatePicker, Input, Row, Col, Statistic, theme
 } from 'antd';
 import { 
   FileTextOutlined, ReloadOutlined, SearchOutlined,
-  CheckCircleOutlined, CloseCircleOutlined, EyeOutlined
+  CheckCircleOutlined, CloseCircleOutlined, EyeOutlined,
+  RiseOutlined, FallOutlined, BarChartOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { Dayjs } from 'dayjs';
+import { Area, Pie, Column } from '@ant-design/plots';
 
 const { RangePicker } = DatePicker;
 
@@ -31,15 +33,14 @@ interface Log {
 }
 
 const LogManagement: React.FC = () => {
+  const { token } = theme.useToken();
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewingLog, setViewingLog] = useState<Log | null>(null);
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0
-  });
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  const [stats, setStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
   
   // 筛选条件
   const [filters, setFilters] = useState({
@@ -48,6 +49,17 @@ const LogManagement: React.FC = () => {
     dateRange: null as [Dayjs, Dayjs] | null,
     keyword: ''
   });
+
+  // 获取统计数据
+  const fetchStats = async () => {
+    setStatsLoading(true);
+    try {
+      const res = await fetch('/api/logs?action=stats');
+      const data = await res.json();
+      if (data.success) setStats(data.data);
+    } catch { /* ignore */ }
+    finally { setStatsLoading(false); }
+  };
 
   // 获取日志列表
   const fetchLogs = async (page = 1, pageSize = 10) => {
@@ -83,6 +95,7 @@ const LogManagement: React.FC = () => {
 
   useEffect(() => {
     fetchLogs();
+    fetchStats();
   }, []);
 
   // 查看详情
@@ -177,6 +190,7 @@ const LogManagement: React.FC = () => {
       dataIndex: 'ip',
       key: 'ip',
       width: 140,
+      render: (ip) => ip === '::1' ? '127.0.0.1 (本地)' : (ip || '-'),
     },
     {
       title: '耗时',
@@ -228,12 +242,12 @@ const LogManagement: React.FC = () => {
   return (
     <div style={{ padding: '24px' }}>
       {/* 统计卡片 */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
+      <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={6}>
           <Card>
             <Statistic
               title="总日志数"
-              value={pagination.total}
+              value={stats?.total ?? pagination.total}
               prefix={<FileTextOutlined />}
             />
           </Card>
@@ -242,8 +256,8 @@ const LogManagement: React.FC = () => {
           <Card>
             <Statistic
               title="成功操作"
-              value={logs.filter(l => l.status === 1).length}
-              valueStyle={{ color: '#3f8600' }}
+              value={stats?.successCount ?? 0}
+              valueStyle={{ color: token.colorSuccess }}
               prefix={<CheckCircleOutlined />}
             />
           </Card>
@@ -252,8 +266,8 @@ const LogManagement: React.FC = () => {
           <Card>
             <Statistic
               title="失败操作"
-              value={logs.filter(l => l.status === 0).length}
-              valueStyle={{ color: '#cf1322' }}
+              value={stats?.failCount ?? 0}
+              valueStyle={{ color: token.colorError }}
               prefix={<CloseCircleOutlined />}
             />
           </Card>
@@ -261,17 +275,72 @@ const LogManagement: React.FC = () => {
         <Col span={6}>
           <Card>
             <Statistic
-              title="平均耗时"
-              value={
-                logs.length > 0 
-                  ? Math.round(logs.reduce((sum, l) => sum + (l.costTime || 0), 0) / logs.length)
-                  : 0
-              }
-              suffix="ms"
+              title="成功率"
+              value={stats?.successRate ?? 100}
+              suffix="%"
+              valueStyle={{ color: (stats?.successRate ?? 100) >= 90 ? token.colorSuccess : token.colorWarning }}
+              prefix={<RiseOutlined />}
             />
           </Card>
         </Col>
       </Row>
+
+      {/* 图表区域 */}
+      {stats && (
+        <Row gutter={16} style={{ marginBottom: 16 }}>
+          {/* 近7天操作趋势 */}
+          <Col span={14}>
+            <Card
+              title={<span><BarChartOutlined style={{ marginRight: 6 }} />近7天操作趋势</span>}
+              size="small"
+              loading={statsLoading}
+            >
+              <Area
+                data={stats.trend.flatMap((d: any) => [
+                  { date: d.date, value: d.success, type: '成功' },
+                  { date: d.date, value: d.fail, type: '失败' },
+                ])}
+                xField="date"
+                yField="value"
+                seriesField="type"
+                color={[token.colorSuccess, token.colorError]}
+                height={180}
+                smooth
+                areaStyle={{ fillOpacity: 0.15 }}
+                legend={{ position: 'top-right' }}
+                xAxis={{ label: { style: { fontSize: 11 } } }}
+                yAxis={{ label: { style: { fontSize: 11 } } }}
+              />
+            </Card>
+          </Col>
+
+          {/* 模块操作分布 */}
+          <Col span={10}>
+            <Card
+              title="模块操作分布（近30天）"
+              size="small"
+              loading={statsLoading}
+            >
+              {stats.moduleStats.length > 0 ? (
+                <Column
+                  data={stats.moduleStats}
+                  xField="module"
+                  yField="count"
+                  color={token.colorPrimary}
+                  height={180}
+                  label={{ position: 'top', style: { fontSize: 10 } }}
+                  xAxis={{ label: { style: { fontSize: 10 }, autoRotate: true } }}
+                  yAxis={{ label: { style: { fontSize: 10 } } }}
+                />
+              ) : (
+                <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', color: token.colorTextTertiary }}>
+                  暂无数据
+                </div>
+              )}
+            </Card>
+          </Col>
+        </Row>
+      )}
 
       {/* 筛选栏 */}
       <Card style={{ marginBottom: 16 }}>
@@ -388,7 +457,7 @@ const LogManagement: React.FC = () => {
                 <p><strong>操作用户：</strong>{viewingLog.username || '系统'} (ID: {viewingLog.userId || '-'})</p>
               </Col>
               <Col span={12}>
-                <p><strong>IP地址：</strong>{viewingLog.ip || '-'}</p>
+                <p><strong>IP地址：</strong>{viewingLog.ip === '::1' ? '127.0.0.1 (本地)' : (viewingLog.ip || '-')}</p>
               </Col>
               <Col span={12}>
                 <p><strong>耗时：</strong>{viewingLog.costTime ? `${viewingLog.costTime}ms` : '-'}</p>
@@ -401,14 +470,17 @@ const LogManagement: React.FC = () => {
             {viewingLog.params && (
               <>
                 <p style={{ marginTop: 16 }}><strong>请求参数：</strong></p>
-                <pre style={{ 
-                  padding: '12px', 
-                  background: '#f5f5f5', 
-                  borderRadius: '4px',
+                <pre style={{
+                  padding: '12px',
+                  background: token.colorFillTertiary,
+                  color: token.colorText,
+                  borderRadius: '6px',
                   overflow: 'auto',
-                  maxHeight: '200px'
+                  maxHeight: '200px',
+                  fontSize: 12,
+                  border: `1px solid ${token.colorBorderSecondary}`,
                 }}>
-                  {JSON.stringify(JSON.parse(viewingLog.params), null, 2)}
+                  {(() => { try { return JSON.stringify(JSON.parse(viewingLog.params!), null, 2); } catch { return viewingLog.params; } })()}
                 </pre>
               </>
             )}
@@ -416,12 +488,15 @@ const LogManagement: React.FC = () => {
             {viewingLog.result && (
               <>
                 <p style={{ marginTop: 16 }}><strong>操作结果：</strong></p>
-                <pre style={{ 
-                  padding: '12px', 
-                  background: '#f5f5f5', 
-                  borderRadius: '4px',
+                <pre style={{
+                  padding: '12px',
+                  background: token.colorFillTertiary,
+                  color: token.colorText,
+                  borderRadius: '6px',
                   overflow: 'auto',
-                  maxHeight: '200px'
+                  maxHeight: '200px',
+                  fontSize: 12,
+                  border: `1px solid ${token.colorBorderSecondary}`,
                 }}>
                   {viewingLog.result}
                 </pre>
@@ -431,12 +506,14 @@ const LogManagement: React.FC = () => {
             {viewingLog.errorMsg && (
               <>
                 <p style={{ marginTop: 16 }}><strong>错误信息：</strong></p>
-                <div style={{ 
-                  padding: '12px', 
-                  background: '#fff2f0', 
-                  borderRadius: '4px',
-                  color: '#cf1322',
-                  whiteSpace: 'pre-wrap'
+                <div style={{
+                  padding: '12px',
+                  background: token.colorErrorBg,
+                  borderRadius: '6px',
+                  color: token.colorError,
+                  whiteSpace: 'pre-wrap',
+                  fontSize: 12,
+                  border: `1px solid ${token.colorErrorBorder}`,
                 }}>
                   {viewingLog.errorMsg}
                 </div>
@@ -446,12 +523,14 @@ const LogManagement: React.FC = () => {
             {viewingLog.userAgent && (
               <>
                 <p style={{ marginTop: 16 }}><strong>User Agent：</strong></p>
-                <div style={{ 
-                  padding: '12px', 
-                  background: '#f5f5f5', 
-                  borderRadius: '4px',
+                <div style={{
+                  padding: '12px',
+                  background: token.colorFillTertiary,
+                  borderRadius: '6px',
                   fontSize: '12px',
-                  wordBreak: 'break-all'
+                  wordBreak: 'break-all',
+                  color: token.colorTextSecondary,
+                  border: `1px solid ${token.colorBorderSecondary}`,
                 }}>
                   {viewingLog.userAgent}
                 </div>

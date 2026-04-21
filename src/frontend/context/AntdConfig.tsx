@@ -5,6 +5,7 @@ import '@/frontend/utils/antdReactPatch';
 
 import React from 'react';
 import { ConfigProvider, App, theme } from 'antd';
+import zhCN from 'antd/locale/zh_CN';
 import { ThemeContext } from './ThemeContext';
 
 export const AntdConfig: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -21,6 +22,7 @@ export const AntdConfig: React.FC<{ children: React.ReactNode }> = ({ children }
 
     return (
         <ConfigProvider
+            locale={zhCN}
             warning={{ compatible: false }}
             theme={{
                 algorithm: [

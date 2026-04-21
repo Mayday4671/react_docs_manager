@@ -10,7 +10,7 @@
 }
 
 .trigger:hover {
-    color: #1890ff;
+    color: var(--primary-color, #1890ff);
 }
 
 /**

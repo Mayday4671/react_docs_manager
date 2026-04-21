@@ -386,9 +386,26 @@ const DocNotes: React.FC = () => {
    */
   const collectFiles = (fileList: FileList | null) => {
     if (!fileList) return;
-    const valid = Array.from(fileList).filter(f =>
-      /\.(md|txt|markdown|sh|bat|docx|xlsx|xls)$/i.test(f.name),
-    );
+    const MAX_BINARY = 20 * 1024 * 1024; // 20MB
+    const MAX_TEXT = 5 * 1024 * 1024;    // 5MB
+    const oversized: string[] = [];
+
+    const valid = Array.from(fileList).filter(f => {
+      if (!/\.(md|txt|markdown|sh|bat|docx|xlsx|xls)$/i.test(f.name)) return false;
+      const ext = f.name.split('.').pop()?.toLowerCase() || '';
+      const isBinary = ['docx', 'xlsx', 'xls'].includes(ext);
+      const limit = isBinary ? MAX_BINARY : MAX_TEXT;
+      if (f.size > limit) {
+        oversized.push(`${f.name}（${(f.size / 1024 / 1024).toFixed(1)}MB，限制 ${isBinary ? '20MB' : '5MB'}）`);
+        return false;
+      }
+      return true;
+    });
+
+    if (oversized.length > 0) {
+      message.warning(`以下文件过大已跳过：${oversized.join('、')}`);
+    }
+
     setImportFiles(prev => {
       const existing = new Set(prev.map(f => f.webkitRelativePath || f.name));
       const newOnes = valid.filter(f => !existing.has(f.webkitRelativePath || f.name));
@@ -433,6 +450,17 @@ const DocNotes: React.FC = () => {
 
     for (const file of importFiles) {
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
+
+      // 文件大小限制：docx/xlsx 等二进制文件 ≤ 20MB，文本文件 ≤ 5MB
+      const MAX_BINARY = 20 * 1024 * 1024; // 20MB
+      const MAX_TEXT = 5 * 1024 * 1024;    // 5MB
+      const isBinary = ['docx', 'xlsx', 'xls'].includes(ext);
+      const limit = isBinary ? MAX_BINARY : MAX_TEXT;
+      if (file.size > limit) {
+        message.warning(`「${file.name}」文件过大（${(file.size / 1024 / 1024).toFixed(1)}MB），已跳过。限制：${isBinary ? '20MB' : '5MB'}`);
+        continue;
+      }
+
       // shell/batch 扩展名到代码块语言标识的映射
       const langMap: Record<string, string> = { sh: 'bash', bat: 'batch' };
       let content: string;
@@ -440,30 +468,27 @@ const DocNotes: React.FC = () => {
 
       if (ext === 'docx') {
         // Word 文档：读取二进制 → base64 存储，viewer 端用 mammoth 解析
-        // 注意：不能用 btoa(String.fromCharCode(...new Uint8Array(buf)))
-        // 大文件时展开运算符会超出调用栈，改用循环分块处理
         const buf = await file.arrayBuffer();
         const bytes = new Uint8Array(buf);
         let binary = '';
-        // 每次处理 8192 字节，避免单次 fromCharCode 参数过多导致栈溢出
         for (let i = 0; i < bytes.length; i += 8192) {
           binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
         }
         content = btoa(binary);
         fileType = 'docx';
       } else if (ext === 'xlsx' || ext === 'xls') {
-        // Excel：转换为 markdown 表格
+        // Excel：转换为 markdown 表格，保留真实后缀
         content = await xlsxToMarkdown(file);
-        fileType = 'md';
+        fileType = ext; // 'xlsx' 或 'xls'
       } else if (langMap[ext]) {
-        // 脚本文件：包裹为 markdown 代码块，保留语法高亮
+        // 脚本文件：包裹为 markdown 代码块，保留真实后缀
         const rawContent = await file.text();
         content = `\`\`\`${langMap[ext]}\n${rawContent}\n\`\`\``;
-        fileType = 'md';
+        fileType = ext; // 'sh' 或 'bat'
       } else {
-        // markdown/txt：直接读取文本内容
+        // markdown/txt：直接读取文本，保留真实后缀
         content = await file.text();
-        fileType = 'md';
+        fileType = ext || 'md'; // 'md'、'txt' 等
       }
 
       // 文件名去掉扩展名作为笔记标题

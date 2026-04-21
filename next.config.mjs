@@ -25,6 +25,12 @@ const nextConfig = {
         'node:crypto': false,
       };
     }
+
+    if (isServer) {
+      // node-pty 是原生模块，只在服务端使用，不打包进客户端
+      config.externals = [...(config.externals || []), 'node-pty'];
+    }
+
     return config;
   },
   

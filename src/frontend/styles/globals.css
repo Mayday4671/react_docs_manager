@@ -43,7 +43,7 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary-color-hover, #40a9ff);
   transform: scaleX(1.2);
-  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--primary-color, #1890ff) 30%, transparent);
 }
 
 ::-webkit-scrollbar-thumb:active {
@@ -68,7 +68,7 @@ body {
 
 .dark-theme ::-webkit-scrollbar-thumb:hover {
   background: var(--primary-color-hover, #40a9ff);
-  box-shadow: 0 2px 12px rgba(24, 144, 255, 0.4);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--primary-color, #1890ff) 40%, transparent);
 }
 
 .dark-theme ::-webkit-scrollbar-corner {
@@ -87,25 +87,64 @@ html {
 
 /* 特殊区域滚动条优化 */
 
-/* 表格滚动条 */
-.ant-table-body::-webkit-scrollbar {
+/* 表格滚动条 - 覆盖所有 antd 表格相关滚动容器 */
+.ant-table-body::-webkit-scrollbar,
+.ant-table-content::-webkit-scrollbar,
+.ant-table-wrapper .ant-spin-nested-loading::-webkit-scrollbar,
+[class*="ant-table"]::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
-.ant-table-body::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.02);
+.ant-table-body::-webkit-scrollbar-track,
+.ant-table-content::-webkit-scrollbar-track,
+[class*="ant-table"]::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04);
   border-radius: 3px;
 }
 
-.ant-table-body::-webkit-scrollbar-thumb {
-  background: rgba(24, 144, 255, 0.4);
+.ant-table-body::-webkit-scrollbar-thumb,
+.ant-table-content::-webkit-scrollbar-thumb,
+[class*="ant-table"]::-webkit-scrollbar-thumb {
+  background: var(--primary-color, #1890ff);
   border-radius: 3px;
-  border: none;
 }
 
-.ant-table-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(24, 144, 255, 0.6);
+.ant-table-body::-webkit-scrollbar-thumb:hover,
+.ant-table-content::-webkit-scrollbar-thumb:hover,
+[class*="ant-table"]::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color-hover, #40a9ff);
+}
+
+.ant-table-body::-webkit-scrollbar-corner,
+.ant-table-content::-webkit-scrollbar-corner,
+[class*="ant-table"]::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* 暗色主题表格滚动条 */
+.dark-theme .ant-table-body::-webkit-scrollbar-track,
+.dark-theme .ant-table-content::-webkit-scrollbar-track,
+.dark-theme [class*="ant-table"]::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dark-theme .ant-table-body::-webkit-scrollbar-thumb,
+.dark-theme .ant-table-content::-webkit-scrollbar-thumb,
+.dark-theme [class*="ant-table"]::-webkit-scrollbar-thumb {
+  background: var(--primary-color, #1890ff);
+}
+
+.dark-theme .ant-table-body::-webkit-scrollbar-thumb:hover,
+.dark-theme .ant-table-content::-webkit-scrollbar-thumb:hover,
+.dark-theme [class*="ant-table"]::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color-hover, #40a9ff);
+}
+
+.dark-theme .ant-table-body::-webkit-scrollbar-corner,
+.dark-theme .ant-table-content::-webkit-scrollbar-corner,
+.dark-theme [class*="ant-table"]::-webkit-scrollbar-corner {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* 抽屉和模态框滚动条 */
@@ -116,7 +155,7 @@ html {
 
 .ant-drawer-body::-webkit-scrollbar-thumb,
 .ant-modal-body::-webkit-scrollbar-thumb {
-  background: rgba(24, 144, 255, 0.5);
+  background: color-mix(in srgb, var(--primary-color, #1890ff) 50%, transparent);
   border-radius: 3px;
 }
 
@@ -128,7 +167,7 @@ html {
 
 .ant-select-dropdown::-webkit-scrollbar-thumb,
 .ant-dropdown-menu::-webkit-scrollbar-thumb {
-  background: rgba(24, 144, 255, 0.3);
+  background: color-mix(in srgb, var(--primary-color, #1890ff) 30%, transparent);
   border-radius: 2px;
 }
 
@@ -150,14 +189,14 @@ code::-webkit-scrollbar-track,
 pre::-webkit-scrollbar-thumb,
 code::-webkit-scrollbar-thumb,
 .ant-typography pre::-webkit-scrollbar-thumb {
-  background: rgba(24, 144, 255, 0.4);
+  background: color-mix(in srgb, var(--primary-color, #1890ff) 40%, transparent);
   border-radius: 2px;
 }
 
 pre::-webkit-scrollbar-thumb:hover,
 code::-webkit-scrollbar-thumb:hover,
 .ant-typography pre::-webkit-scrollbar-thumb:hover {
-  background: rgba(24, 144, 255, 0.6);
+  background: color-mix(in srgb, var(--primary-color, #1890ff) 60%, transparent);
 }
 
 /* 内容区域滚动条 */
@@ -209,13 +248,13 @@ code::-webkit-scrollbar-thumb:hover,
 /* 滚动条动画效果 */
 @keyframes scrollbar-glow {
   0% {
-    box-shadow: 0 0 0 rgba(24, 144, 255, 0);
+    box-shadow: 0 0 0 color-mix(in srgb, var(--primary-color, #1890ff) 0%, transparent);
   }
   50% {
-    box-shadow: 0 0 8px rgba(24, 144, 255, 0.3);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--primary-color, #1890ff) 30%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 rgba(24, 144, 255, 0);
+    box-shadow: 0 0 0 color-mix(in srgb, var(--primary-color, #1890ff) 0%, transparent);
   }
 }
 
@@ -258,7 +297,7 @@ code::-webkit-scrollbar-thumb:hover,
 }
 
 .trigger:hover {
-  color: #1890ff;
+  color: var(--primary-color, #1890ff);
 }
 
 .logo {

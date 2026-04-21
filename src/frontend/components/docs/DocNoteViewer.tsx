@@ -16,8 +16,8 @@
 'use client';
 
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { Button, Space, Tag, Typography, Popconfirm, Tooltip, theme, Anchor, Image } from 'antd';
-import { EditOutlined, DeleteOutlined, PushpinOutlined, PushpinFilled } from '@ant-design/icons';
+import { Button, Space, Tag, Typography, Popconfirm, Tooltip, theme, Anchor, Image, Dropdown, App } from 'antd';
+import { EditOutlined, DeleteOutlined, PushpinOutlined, PushpinFilled, DownloadOutlined, FilePdfOutlined, FileWordOutlined, LoadingOutlined, FileTextOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -162,9 +162,11 @@ const CodeBlock: React.FC<{ code: string; language: string; darkMode: boolean }>
 const DocNoteViewer: React.FC<Props> = ({ note, onEdit, onDelete, onTogglePin }) => {
   const { token } = theme.useToken();
   const { darkMode } = useTheme();
+  const { message: messageApi } = App.useApp();
 
   /** 正文滚动容器的 ref，用于大纲点击时精确计算滚动偏移量 */
   const contentRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
 
   // ── docx 渲染相关 ──────────────────────────────────────────
   /** mammoth 转换后的 HTML 字符串，仅 fileType='docx' 时使用 */
@@ -395,6 +397,118 @@ const DocNoteViewer: React.FC<Props> = ({ note, onEdit, onDelete, onTogglePin })
 
   const borderColor = token.colorBorderSecondary;
 
+  // ── 导出功能 ──────────────────────────────────────────────
+  const handleExportPDF = async () => {
+    if (!contentRef.current) return;
+    setExporting(true);
+    try {
+      const { default: html2canvas } = await import('html2canvas');
+      const { default: jsPDF } = await import('jspdf');
+
+      const el = contentRef.current;
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: token.colorBgContainer,
+        scrollY: 0,
+        height: el.scrollHeight,
+        windowHeight: el.scrollHeight,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+
+      let y = 0;
+      while (y < imgH) {
+        if (y > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, -y, imgW, imgH);
+        y += pageH;
+      }
+
+      pdf.save(`${note.title}.pdf`);
+      messageApi.success('PDF 导出成功');
+    } catch (e: any) {
+      messageApi.error(`导出失败: ${e.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // 导出原始文件，用真实后缀还原文件名
+  const handleExportOriginal = () => {
+    if (!note.content) { messageApi.warning('笔记内容为空'); return; }
+
+    const ext = note.fileType || 'md';
+
+    if (ext === 'docx') {
+      // docx：base64 → 二进制 → 下载
+      const binary = atob(note.content);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${note.title}.docx`; a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      // 其他所有格式（md、txt、sh、bat、xlsx 等）：直接下载文本内容，用原始后缀
+      const mimeMap: Record<string, string> = {
+        sh: 'text/x-sh',
+        bat: 'text/x-bat',
+        txt: 'text/plain',
+        md: 'text/markdown',
+        xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        xls: 'application/vnd.ms-excel',
+      };
+      const mime = mimeMap[ext] || 'text/plain';
+      const blob = new Blob([note.content], { type: `${mime};charset=utf-8` });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${note.title}.${ext}`; a.click();
+      URL.revokeObjectURL(url);
+    }
+    messageApi.success('导出成功');
+  };
+
+  const handleExportWord = async () => {
+    if (!note.content) return;
+    setExporting(true);
+    try {
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import('docx');
+      const lines = (note.content || '').split('\n');
+      const children: any[] = [];
+
+      for (const line of lines) {
+        const h = line.match(/^(#{1,6})\s+(.+)/);
+        if (h) {
+          const levels = [HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3,
+            HeadingLevel.HEADING_4, HeadingLevel.HEADING_5, HeadingLevel.HEADING_6];
+          children.push(new Paragraph({ text: h[2], heading: levels[h[1].length - 1] }));
+        } else if (line.trim() === '') {
+          children.push(new Paragraph({ text: '' }));
+        } else {
+          children.push(new Paragraph({ children: [new TextRun(line.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1'))] }));
+        }
+      }
+
+      const doc = new Document({ sections: [{ children }] });
+      const blob = await Packer.toBlob(doc);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${note.title}.docx`; a.click();
+      URL.revokeObjectURL(url);
+      messageApi.success('Word 导出成功');
+    } catch (e: any) {
+      messageApi.error(`导出失败: ${e.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: token.colorBgContainer }}>
       {/* ── 顶部标题栏 ── */}
@@ -426,6 +540,26 @@ const DocNoteViewer: React.FC<Props> = ({ note, onEdit, onDelete, onTogglePin })
               onClick={onTogglePin}
             />
           </Tooltip>
+          <Dropdown
+            menu={{
+              items: [
+                {
+                  key: 'original',
+                  label: `下载原文件 (.${note.fileType || 'md'})`,
+                  icon: note.fileType === 'docx' ? <FileWordOutlined /> : <FileTextOutlined />,
+                  onClick: handleExportOriginal,
+                },
+                { type: 'divider' },
+                { key: 'pdf', label: '导出为 PDF', icon: <FilePdfOutlined />, onClick: handleExportPDF },
+                ...(note.fileType !== 'docx' ? [{ key: 'word', label: '转换为 Word (.docx)', icon: <FileWordOutlined />, onClick: handleExportWord }] : []),
+              ],
+            }}
+            disabled={exporting}
+          >
+            <Button icon={exporting ? <LoadingOutlined /> : <DownloadOutlined />}>
+              导出
+            </Button>
+          </Dropdown>
           <Button type="primary" icon={<EditOutlined />} onClick={onEdit}>编辑</Button>
           <Popconfirm
             title="确认删除这篇笔记？"
