@@ -11,6 +11,7 @@ import ChangelogManagement from '@/frontend/components/business/ChangelogManagem
 import FileManagement from '@/frontend/components/business/FileManagement';
 import HkApiDocs from '@/frontend/components/hk/HkApiDocs';
 import DocNotes from '@/frontend/components/docs/DocNotes';
+import MenuManagement from '@/frontend/components/system/MenuManagement';
 
 // 临时占位组件，后续可继续标准化迁移
 const UserData = () => <div>用户数据模块 (标准化准备中)</div>;
@@ -37,6 +38,7 @@ const componentMap: Record<string, React.ComponentType> = {
     'file-management': FileManagement,
     'hk-api-docs': HkApiDocs,
     'doc-notes': DocNotes,
+    'menu-management': MenuManagement,
 };
 
 export const getComponentByKey = (key: string): React.ReactNode => {
