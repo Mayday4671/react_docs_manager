@@ -15,10 +15,16 @@ import {
 } from '@/backend/services/menuService';
 
 /**
- * GET /api/menu              → 侧边栏用，只返回启用+可见的
- * GET /api/menu?admin=1      → 管理页用，返回全部
- * GET /api/menu?action=gen-key&label=xxx          → 生成不重复 key
- * GET /api/menu?action=check-key&key=xxx&excludeId=1 → 校验 key 是否重复
+ * 菜单查询接口，根据查询参数返回不同数据集。
+ *
+ * GET /api/menu                                    → 侧边栏专用，只返回 status=1 且 visible=1 的菜单
+ * GET /api/menu?admin=1                            → 管理页专用，返回全量菜单（含禁用/隐藏）
+ * GET /api/menu?action=gen-key&label=xxx           → 根据名称生成不重复的菜单 key
+ * GET /api/menu?action=check-key&key=xxx           → 校验 key 是否已被占用
+ * GET /api/menu?action=check-key&key=xxx&excludeId=1 → 编辑时校验，排除自身 ID
+ *
+ * @param request - Next.js 请求对象
+ * @returns JSON 响应，格式视 action 而定
  */
 export async function GET(request: NextRequest) {
   try {
@@ -53,7 +59,18 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/menu  → 创建菜单
+ * 创建新菜单项。
+ *
+ * 请求体字段：
+ *   - key（必填）：菜单唯一标识，提交前由前端校验唯一性，此处再做一次兜底校验
+ *   - label（必填）：菜单显示名称
+ *   - icon / path / component / parentId / orderNum / menuType：可选字段
+ *   - visible / status：可选，默认均为 1（显示/启用）
+ *
+ * 注意：createMenu 不支持 visible/status 字段，创建后单独调用 updateMenu 补充。
+ *
+ * @param request - Next.js 请求对象，body 为 JSON
+ * @returns 创建成功返回 { success: true, data: menu }，失败返回错误信息
  */
 export async function POST(request: NextRequest) {
   try {
@@ -64,7 +81,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少必填字段 key 或 label' }, { status: 400 });
     }
 
-    // 再次校验 key 唯一性
+    /** 再次兜底校验 key 唯一性，防止并发场景下前端校验失效 */
     const exists = await checkKeyExists(key);
     if (exists) {
       return NextResponse.json({ success: false, error: `key "${key}" 已存在` }, { status: 400 });
@@ -77,7 +94,10 @@ export async function POST(request: NextRequest) {
       menuType: menuType || (parentId ? 'C' : 'M'),
     });
 
-    // 更新 visible/status（createMenu 不支持，单独 update）
+    /**
+     * createMenu 不支持 visible/status 字段（Prisma schema 有默认值），
+     * 若前端传入了非默认值，需单独调用 updateMenu 覆盖。
+     */
     if (visible !== undefined || status !== undefined) {
       await updateMenu(menu.id, {
         visible: visible ?? 1,
@@ -93,7 +113,15 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * PUT /api/menu  → 更新菜单
+ * 更新菜单项。
+ *
+ * 请求体字段：
+ *   - id（必填）：要更新的菜单 ID
+ *   - key（可选）：若传入则校验唯一性（排除自身），通过后才更新
+ *   - 其余字段均为可选，只更新传入的字段
+ *
+ * @param request - Next.js 请求对象，body 为 JSON
+ * @returns 更新成功返回 { success: true, data: menu }，失败返回错误信息
  */
 export async function PUT(request: NextRequest) {
   try {
@@ -104,7 +132,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少 id' }, { status: 400 });
     }
 
-    // 如果改了 key，校验唯一性
+    /** 若传入了新 key，校验唯一性（excludeId=id 排除自身，避免误报） */
     if (key) {
       const exists = await checkKeyExists(key, id);
       if (exists) {
@@ -122,7 +150,13 @@ export async function PUT(request: NextRequest) {
 }
 
 /**
- * DELETE /api/menu?id=xxx  → 删除菜单
+ * 删除菜单项。
+ *
+ * 注意：有子菜单的目录无法直接删除，需前端提前拦截。
+ * 若强行删除有子菜单的目录，数据库外键约束会抛出异常。
+ *
+ * @param request - Next.js 请求对象，查询参数 id 为要删除的菜单 ID
+ * @returns 删除成功返回 { success: true }，失败返回错误信息
  */
 export async function DELETE(request: NextRequest) {
   try {
