@@ -32,42 +32,62 @@ model SysUser {
 
 // 系统角色表
 model SysRole {
-  id          Int       @id @default(autoincrement())
-  roleName    String    @unique
-  roleKey     String    @unique
+  id          Int            @id @default(autoincrement())
+  roleName    String         @unique
+  roleKey     String         @unique
   description String?
-  status      Int       @default(1)
+  status      Int            @default(1)
   users       SysUser[]
+  // 角色拥有的菜单权限（多对多关联）
+  roleMenus   SysRoleMenu[]
   createdBy   Int?
   updatedBy   Int?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
   
   @@map("sys_role")
 }
 
 // 系统菜单表
 model SysMenu {
-  id        Int       @id @default(autoincrement())
-  key       String    @unique
+  id        Int           @id @default(autoincrement())
+  key       String        @unique
   label     String
   icon      String?
-  path      String?   // 路由路径
-  component String?   // 组件路径
+  path      String?       // 路由路径
+  component String?       // 组件路径
+  perms     String?       // 按钮权限标识，如 user:add、user:delete，menuType=F 时使用
   parentId  Int?
-  parent    SysMenu?  @relation("MenuToSubMenu", fields: [parentId], references: [id])
-  children  SysMenu[] @relation("MenuToSubMenu")
-  orderNum  Int       @default(0)
-  menuType  String    @default("M") // M:目录 C:菜单 F:按钮
-  visible   Int       @default(1)   // 1:显示 0:隐藏
-  status    Int       @default(1)   // 1:启用 0:禁用
+  parent    SysMenu?      @relation("MenuToSubMenu", fields: [parentId], references: [id])
+  children  SysMenu[]     @relation("MenuToSubMenu")
+  orderNum  Int           @default(0)
+  menuType  String        @default("M") // M:目录 C:菜单 F:按钮
+  visible   Int           @default(1)   // 1:显示 0:隐藏
+  status    Int           @default(1)   // 1:启用 0:禁用
+  // 角色菜单关联（多对多）
+  roleMenus SysRoleMenu[]
   createdBy Int?
   updatedBy Int?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   @@index([parentId])
   @@map("sys_menu")
+}
+
+// 角色-菜单关联表（多对多）
+model SysRoleMenu {
+  id        Int      @id @default(autoincrement())
+  roleId    Int
+  menuId    Int
+  role      SysRole  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  menu      SysMenu  @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([roleId, menuId])
+  @@index([roleId])
+  @@index([menuId])
+  @@map("sys_role_menu")
 }
 
 // 系统配置表

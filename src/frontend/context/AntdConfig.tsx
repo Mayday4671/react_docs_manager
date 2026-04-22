@@ -13,6 +13,7 @@ import React from 'react';
 import { ConfigProvider, App, theme } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { ThemeContext } from './ThemeContext';
+import { AuthProvider } from './AuthContext';
 
 /**
  * Ant Design 全局配置组件
@@ -50,7 +51,7 @@ export const AntdConfig: React.FC<{ children: React.ReactNode }> = ({ children }
                 },
             }}
         >
-            <App>{children}</App>
+        <App><AuthProvider>{children}</AuthProvider></App>
         </ConfigProvider>
     );
 };

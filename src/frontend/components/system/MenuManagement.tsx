@@ -30,7 +30,7 @@ const REGISTERED_KEYS = [
   'home', 'h5-player', 'user-management', 'role-management',
   'notification-management', 'log-management', 'config-management',
   'database-management', 'changelog-management', 'file-management',
-  'hk-api-docs', 'doc-notes', 'menu-management',
+  'hk-api-docs', 'doc-notes', 'menu-management', 'profile',
 ];
 
 /**

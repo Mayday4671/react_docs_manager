@@ -31,13 +31,15 @@ import {
   BookOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import { Button, Layout, Menu, theme, Tabs, Breadcrumb, Spin, Tooltip } from "antd";
+import { Button, Layout, Menu, theme, Tabs, Breadcrumb, Spin, Tooltip, Avatar, Dropdown } from "antd";
 import type { MenuProps } from 'antd';
 const reactLogo = "/react.svg";
 import "@/frontend/styles/globals.css"; 
 import "@/frontend/styles/LayOut.css";
 import { useTheme } from "@/frontend/context/ThemeContext";
 import ThemeSettings from "./ThemeSettings";
+import { useAuth } from "@/frontend/context/AuthContext";
+import LoginPage from "@/frontend/components/auth/LoginPage";
 import { getComponentByKey } from "@/frontend/config/componentMap";
 import GlobalSearch from "@/frontend/components/search/GlobalSearch";
 
@@ -166,12 +168,13 @@ const LayOut: React.FC = () => {
   const [systemName, setSystemName] = useState('My App');
   /** 全局搜索弹窗是否打开 */
   const [searchOpen, setSearchOpen] = useState(false);
-  
+
   const {
-    token, // 获取完整token
+    token,
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
   const { layout, darkMode } = useTheme();
+  const { user, menus: authMenus, isLoggedIn, loading: authLoading, logout } = useAuth();
 
   /** 初始标签页列表，包含不可关闭的首页标签 */
   const initialPanes: TabItem[] = [
@@ -539,8 +542,28 @@ const LayOut: React.FC = () => {
       setContextMenu(prev => ({ ...prev, visible: false }));
   };
 
-  /** 转换后的 Ant Design Menu items 格式菜单数据 */
-  const menuItems = transformMenuData(menuData);
+  /** 转换后的 Ant Design Menu items 格式菜单数据（已登录用权限菜单，未登录用全量菜单） */
+  const menuItems = transformMenuData(isLoggedIn ? (authMenus as DbMenuItem[]) : menuData);
+
+  // 认证初始化中，显示加载状态
+  if (authLoading) {
+    return (
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        background: token.colorBgLayout, zIndex: 9999,
+      }}>
+        <Spin size="large" />
+        <div style={{ marginTop: 16, color: token.colorText }}>初始化中...</div>
+      </div>
+    );
+  }
+
+  // 未登录，显示登录页
+  if (!isLoggedIn) {
+    return <LoginPage />;
+  }
 
   // 如果正在加载菜单数据，显示加载状态
   if (loading) {
@@ -601,14 +624,21 @@ const LayOut: React.FC = () => {
                 }} />
                 <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{systemName}</span>
             </div>
-            <Tooltip title="全局搜索 (Ctrl+K)">
-              <Button
-                type="text"
-                icon={<SearchOutlined />}
-                onClick={() => setSearchOpen(true)}
-                style={{ color: token.colorTextSecondary }}
-              />
-            </Tooltip>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Tooltip title="全局搜索 (Ctrl+K)">
+                <Button type="text" icon={<SearchOutlined />} onClick={() => setSearchOpen(true)} style={{ color: token.colorTextSecondary }} />
+              </Tooltip>
+              <Dropdown menu={{ items: [
+                { key: 'profile', label: '个人信息', icon: <UserOutlined />, onClick: () => onMenuClick?.({ key: 'profile' } as any) },
+                { type: 'divider' },
+                { key: 'logout', label: '退出登录', danger: true, onClick: logout },
+              ]}}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '4px 8px', borderRadius: 8 }}>
+                  <Avatar size={28} icon={<UserOutlined />} src={user?.avatar} style={{ background: token.colorPrimary }} />
+                  <span style={{ fontSize: 13, color: token.colorText }}>{user?.username}</span>
+                </div>
+              </Dropdown>
+            </div>
         </Header>
       )}
 
@@ -703,14 +733,21 @@ const LayOut: React.FC = () => {
                     </div>
                   )}
                   
-                  <Tooltip title="全局搜索 (Ctrl+K)">
-                    <Button
-                      type="text"
-                      icon={<SearchOutlined />}
-                      onClick={() => setSearchOpen(true)}
-                      style={{ color: token.colorTextSecondary }}
-                    />
-                  </Tooltip>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Tooltip title="全局搜索 (Ctrl+K)">
+                      <Button type="text" icon={<SearchOutlined />} onClick={() => setSearchOpen(true)} style={{ color: token.colorTextSecondary }} />
+                    </Tooltip>
+                    <Dropdown menu={{ items: [
+                      { key: 'profile', label: '个人信息', icon: <UserOutlined />, onClick: () => onMenuClick?.({ key: 'profile' } as any) },
+                      { type: 'divider' },
+                      { key: 'logout', label: '退出登录', danger: true, onClick: logout },
+                    ]}}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '4px 8px', borderRadius: 8 }}>
+                        <Avatar size={28} icon={<UserOutlined />} src={user?.avatar} style={{ background: token.colorPrimary }} />
+                        <span style={{ fontSize: 13, color: token.colorText }}>{user?.username}</span>
+                      </div>
+                    </Dropdown>
+                  </div>
                 </Header>
             )}
 
