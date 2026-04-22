@@ -1,3 +1,9 @@
+/**
+ * @file componentMap.tsx
+ * @description 菜单 key 到 React 组件的映射表，用于根据菜单配置动态渲染对应页面组件
+ * @module 路由配置
+ */
+
 import React from 'react';
 import Home from '@/frontend/components/dashboard/Home';
 import H5Player from '@/frontend/components/player/H5Player';
@@ -13,15 +19,20 @@ import HkApiDocs from '@/frontend/components/hk/HkApiDocs';
 import DocNotes from '@/frontend/components/docs/DocNotes';
 import MenuManagement from '@/frontend/components/system/MenuManagement';
 
-// 临时占位组件，后续可继续标准化迁移
+/** 临时占位组件：用户数据模块，后续可继续标准化迁移 */
 const UserData = () => <div>用户数据模块 (标准化准备中)</div>;
+/** 临时占位组件：视频监控模块，后续可继续标准化迁移 */
 const Monitoring = () => <div>视频监控模块 (标准化准备中)</div>;
+/** 临时占位组件：文件上传模块，后续可继续标准化迁移 */
 const Uploads = () => <div>文件上传模块 (标准化准备中)</div>;
 
-// Fallback component
+/** 兜底组件，当菜单 key 未在 componentMap 中注册时渲染 */
 const NotFound = () => <div>Page Not Found</div>;
 
-// Map menu keys to component constructors (not instances!)
+/**
+ * 菜单 key 到组件构造函数的映射表
+ * key 对应数据库中菜单的 key 字段，value 为对应的 React 组件（非实例）
+ */
 const componentMap: Record<string, React.ComponentType> = {
     'home': Home,
     '1': UserData,
@@ -41,6 +52,12 @@ const componentMap: Record<string, React.ComponentType> = {
     'menu-management': MenuManagement,
 };
 
+/**
+ * 根据菜单 key 获取对应的 React 组件节点
+ *
+ * @param key - 菜单 key，对应 componentMap 中的键
+ * @returns 对应组件的 React 节点，未找到时返回 NotFound 组件节点
+ */
 export const getComponentByKey = (key: string): React.ReactNode => {
     const Component = componentMap[key] || NotFound;
     return <Component />;

@@ -1,4 +1,10 @@
 /**
+ * @file antdReactPatch.ts
+ * @description antd v5 与 React 19 兼容性补丁，在模块加载阶段将 React.version 临时伪装为 18.x 以消除版本警告
+ * @module 工具函数
+ */
+
+/**
  * antd v5 与 React 19 兼容性补丁
  *
  * antd v5 在模块加载阶段会检查 React.version，若不在 16~18 范围内则输出

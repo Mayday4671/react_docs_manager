@@ -1,10 +1,19 @@
+/**
+ * @file route.ts
+ * @description 通知公告 CRUD API 路由，支持获取、创建、更新、删除操作，并记录操作日志
+ * @module 系统管理 / 通知管理
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllNotifications, createNotification } from '@/backend/services/notificationService';
 import { createLog } from '@/backend/services/logService';
 
 /**
  * GET /api/notifications
- * 获取通知列表
+ *
+ * 分页获取通知公告列表，支持按类型和状态过滤。
+ *
+ * @param request - Next.js 请求对象，支持查询参数：page / pageSize / type / status
+ * @returns 包含通知列表和分页信息的 JSON 响应
  */
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
@@ -52,7 +61,11 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/notifications
- * 创建通知
+ *
+ * 创建新的通知公告，并记录操作日志。
+ *
+ * @param request - Next.js 请求对象，body 为通知数据 JSON
+ * @returns 包含新建通知记录的 JSON 响应（HTTP 201）
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -96,7 +109,11 @@ export async function POST(request: NextRequest) {
 
 /**
  * PUT /api/notifications
- * 更新通知
+ *
+ * 更新指定 ID 的通知公告。
+ *
+ * @param request - Next.js 请求对象，body 须包含 id 字段及待更新字段
+ * @returns 包含更新后通知记录的 JSON 响应
  */
 export async function PUT(request: NextRequest) {
   try {
@@ -127,8 +144,12 @@ export async function PUT(request: NextRequest) {
 }
 
 /**
- * DELETE /api/notifications
- * 删除通知
+ * DELETE /api/notifications?id={id}
+ *
+ * 删除指定 ID 的通知公告。
+ *
+ * @param request - Next.js 请求对象，查询参数须包含 id
+ * @returns 操作结果的 JSON 响应
  */
 export async function DELETE(request: NextRequest) {
   try {

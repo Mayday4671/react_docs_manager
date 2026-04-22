@@ -1,3 +1,9 @@
+/**
+ * @file FileManagement.tsx
+ * @description 文件管理页面，支持文件列表展示、预览、下载、删除及按类型/关键词筛选
+ * @module 业务管理
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Table, Button, Space, Modal, message, Tag, Card, 
@@ -9,38 +15,71 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 
+/**
+ * 文件记录数据结构
+ */
 interface FileRecord {
+  /** 文件唯一标识 */
   id: number;
+  /** 原始文件名 */
   fileName: string;
+  /** 文件大小（字节） */
   fileSize: number;
+  /** MIME 类型，如 image/jpeg */
   fileType: string;
+  /** 文件扩展名，如 .jpg */
   fileExt: string;
+  /** 服务器存储路径 */
   filePath: string;
+  /** 可访问的文件 URL */
   fileUrl: string;
+  /** 存储方式：local-本地存储 / oss-对象存储 */
   storageType: string;
+  /** 上传用户 ID */
   uploadBy?: number;
+  /** 上传者 IP 地址 */
   uploadIp?: string;
+  /** 状态：1-正常 0-禁用 */
   status: number;
+  /** 下载次数 */
   downloadCount: number;
+  /** 上传时间（ISO 字符串） */
   createdAt: string;
 }
 
+/**
+ * 文件管理组件
+ *
+ * 提供文件的列表展示、预览、下载及删除功能，支持按文件类型和关键词筛选，
+ * 顶部展示文件数量、总大小、下载次数等统计信息。
+ */
 const FileManagement: React.FC = () => {
+  /** 文件列表数据 */
   const [files, setFiles] = useState<FileRecord[]>([]);
+  /** 表格加载状态 */
   const [loading, setLoading] = useState(false);
+  /** 文件预览弹窗是否打开 */
   const [previewVisible, setPreviewVisible] = useState(false);
+  /** 当前正在预览的文件 */
   const [previewFile, setPreviewFile] = useState<FileRecord | null>(null);
+  /** 分页配置：当前页、每页条数、总条数 */
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0
   });
+  /** 筛选条件：文件类型和关键词 */
   const [filters, setFilters] = useState({
     fileType: undefined as string | undefined,
     keyword: ''
   });
 
-  // 获取文件列表
+  /**
+   * 获取文件列表
+   * @param page - 当前页码，默认第 1 页
+   * @param pageSize - 每页条数，默认 10 条
+   * @returns Promise<void>
+   */
   const fetchFiles = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
@@ -71,7 +110,11 @@ const FileManagement: React.FC = () => {
     fetchFiles();
   }, []);
 
-  // 格式化文件大小
+  /**
+   * 格式化文件大小为可读字符串
+   * @param bytes - 文件字节数
+   * @returns 格式化后的大小字符串，如 "1.23 MB"
+   */
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -80,29 +123,42 @@ const FileManagement: React.FC = () => {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  // 预览文件
+  /**
+   * 打开文件预览弹窗
+   * @param file - 要预览的文件记录
+   */
   const handlePreview = (file: FileRecord) => {
     setPreviewFile(file);
     setPreviewVisible(true);
   };
 
-  // 下载文件
+  /**
+   * 在新标签页中下载文件
+   * @param file - 要下载的文件记录
+   */
   const handleDownload = (file: FileRecord) => {
     window.open(file.fileUrl, '_blank');
     message.success('开始下载');
   };
 
-  // 删除文件
+  /**
+   * 删除指定文件
+   * @param id - 要删除的文件 ID
+   */
   const handleDelete = async (id: number) => {
     message.info('删除功能开发中...');
   };
 
-  // 搜索
+  /**
+   * 触发文件列表搜索（重置到第一页）
+   */
   const handleSearch = () => {
     fetchFiles(1, pagination.pageSize);
   };
 
-  // 重置筛选
+  /**
+   * 重置筛选条件并刷新列表
+   */
   const handleReset = () => {
     setFilters({
       fileType: undefined,
@@ -111,7 +167,11 @@ const FileManagement: React.FC = () => {
     setTimeout(() => fetchFiles(1, pagination.pageSize), 0);
   };
 
-  // 文件类型图标
+  /**
+   * 根据 MIME 类型返回对应的 Emoji 图标
+   * @param fileType - 文件 MIME 类型字符串
+   * @returns 对应类型的 Emoji 字符
+   */
   const getFileIcon = (fileType: string) => {
     if (fileType.startsWith('image/')) return '🖼️';
     if (fileType.startsWith('video/')) return '🎬';
@@ -123,7 +183,7 @@ const FileManagement: React.FC = () => {
     return '📁';
   };
 
-  // 表格列定义
+  /** 表格列定义 */
   const columns: ColumnsType<FileRecord> = [
     {
       title: 'ID',
@@ -234,6 +294,7 @@ const FileManagement: React.FC = () => {
     },
   ];
 
+  /** 当前页文件总大小（字节） */
   const totalSize = files.reduce((sum, f) => sum + f.fileSize, 0);
 
   return (

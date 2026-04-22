@@ -1,3 +1,9 @@
+/**
+ * @file DatabaseManagement.tsx
+ * @description 数据库总览页面，展示所有数据表的记录统计，并提供快速跳转入口
+ * @module 系统管理
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Card, Row, Col, Statistic, Table, Tag, Button, Space, 
@@ -11,7 +17,9 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { useRouter } from 'next/navigation';
 
-// 图标映射
+/**
+ * 图标名称到 React 节点的映射表，用于动态渲染服务端返回的图标字符串
+ */
 const iconMap: Record<string, React.ReactNode> = {
   UserOutlined: <UserOutlined />,
   TeamOutlined: <TeamOutlined />,
@@ -25,24 +33,46 @@ const iconMap: Record<string, React.ReactNode> = {
   TableOutlined: <TableOutlined />,
 };
 
+/**
+ * 数据库表统计信息结构
+ */
 interface TableInfo {
+  /** 数据库表名，如 sys_user */
   name: string;
+  /** 表的中文显示名称 */
   displayName: string;
-  icon: string; // 改为字符串类型
+  /** 图标名称字符串，对应 iconMap 中的 key */
+  icon: string;
+  /** 卡片主题色 */
   color: string;
+  /** 当前记录总数 */
   count: number;
+  /** 表功能描述 */
   description: string;
+  /** 对应管理页面的路由路径 */
   route: string;
+  /** 表分类：system-系统表 / business-业务表 */
   category: 'system' | 'business';
 }
 
+/**
+ * 数据库管理组件
+ *
+ * 展示所有数据库表的统计信息（记录数、分类），
+ * 提供快速访问卡片和详细列表两种视图，支持按分类过滤。
+ */
 const DatabaseManagement: React.FC = () => {
   const router = useRouter();
+  /** 数据加载状态 */
   const [loading, setLoading] = useState(false);
+  /** 所有表的统计信息列表 */
   const [tableStats, setTableStats] = useState<TableInfo[]>([]);
+  /** 当前激活的 Tab：all / system / business */
   const [activeTab, setActiveTab] = useState<string>('all');
 
-  // 获取所有表的统计信息
+  /**
+   * 从服务端获取所有表的统计信息
+   */
   const fetchTableStats = async () => {
     setLoading(true);
     try {
@@ -69,24 +99,31 @@ const DatabaseManagement: React.FC = () => {
     fetchTableStats();
   }, []);
 
-  // 跳转到管理页面
+  /**
+   * 跳转到指定管理页面
+   * @param route - 目标路由路径
+   */
   const handleNavigate = (route: string) => {
     router.push(route);
   };
 
-  // 过滤表格数据
+  /**
+   * 根据当前 Tab 过滤表格数据
+   * @returns 过滤后的表信息数组
+   */
   const filteredTables = tableStats.filter(table => 
     activeTab === 'all' || table.category === activeTab
   );
 
-  // 系统表
+  /** 系统表列表 */
   const systemTables = tableStats.filter(t => t.category === 'system');
+  /** 业务表列表 */
   const businessTables = tableStats.filter(t => t.category === 'business');
 
-  // 总记录数
+  /** 所有表的记录总数 */
   const totalRecords = tableStats.reduce((sum, t) => sum + t.count, 0);
 
-  // 表格列定义
+  /** 表格列定义 */
   const columns: ColumnsType<TableInfo> = [
     {
       title: '表名',

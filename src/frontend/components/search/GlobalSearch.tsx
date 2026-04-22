@@ -1,3 +1,9 @@
+/**
+ * @file GlobalSearch.tsx
+ * @description 全局搜索弹窗组件，支持搜索菜单、文档笔记和文件，提供键盘导航功能
+ * @module 搜索
+ */
+
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -11,32 +17,106 @@ import dayjs from 'dayjs';
 
 const { Text } = Typography;
 
+/**
+ * 全局搜索结果数据结构
+ */
 interface SearchResult {
-  menus: Array<{ id: number; key: string; label: string; icon?: string }>;
-  notes: Array<{ id: number; title: string; tags?: string; fileType?: string; updatedAt: string; category?: { id: number; name: string } }>;
-  files: Array<{ id: number; fileName: string; fileType: string; fileSize: number; fileUrl: string; createdAt: string }>;
+  /** 匹配的菜单列表 */
+  menus: Array<{
+    /** 菜单 ID */
+    id: number;
+    /** 菜单 key，用于导航跳转 */
+    key: string;
+    /** 菜单显示名称 */
+    label: string;
+    /** 菜单图标名称（可选） */
+    icon?: string;
+  }>;
+  /** 匹配的文档笔记列表 */
+  notes: Array<{
+    /** 笔记 ID */
+    id: number;
+    /** 笔记标题 */
+    title: string;
+    /** 标签，逗号分隔（可选） */
+    tags?: string;
+    /** 文件类型（可选） */
+    fileType?: string;
+    /** 最后更新时间 */
+    updatedAt: string;
+    /** 所属分类（可选） */
+    category?: {
+      /** 分类 ID */
+      id: number;
+      /** 分类名称 */
+      name: string;
+    };
+  }>;
+  /** 匹配的文件列表 */
+  files: Array<{
+    /** 文件 ID */
+    id: number;
+    /** 文件名 */
+    fileName: string;
+    /** 文件类型 */
+    fileType: string;
+    /** 文件大小（字节） */
+    fileSize: number;
+    /** 文件访问 URL */
+    fileUrl: string;
+    /** 创建时间 */
+    createdAt: string;
+  }>;
 }
 
+/**
+ * GlobalSearch 组件 Props
+ */
 interface Props {
+  /** 弹窗是否打开 */
   open: boolean;
+  /** 关闭弹窗的回调 */
   onClose: () => void;
+  /** 导航到指定菜单 key 的回调 */
   onNavigate: (key: string) => void;
 }
 
+/**
+ * 将字节数格式化为可读的文件大小字符串
+ *
+ * @param bytes - 文件大小（字节）
+ * @returns 格式化后的大小字符串，如 "1.2 MB"
+ */
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+/**
+ * 全局搜索弹窗组件
+ *
+ * 提供跨菜单、文档笔记、文件的统一搜索入口，支持键盘上下键导航和 Enter 确认。
+ * 搜索请求带 250ms 防抖，避免频繁请求。
+ *
+ * @param open - 弹窗是否打开
+ * @param onClose - 关闭弹窗的回调
+ * @param onNavigate - 导航到指定菜单 key 的回调
+ */
 const GlobalSearch: React.FC<Props> = ({ open, onClose, onNavigate }) => {
   const { darkMode, colorPrimary } = useTheme();
   const { token } = theme.useToken();
+  /** 当前搜索关键词 */
   const [query, setQuery] = useState('');
+  /** 搜索结果数据，null 表示尚未搜索 */
   const [results, setResults] = useState<SearchResult | null>(null);
+  /** 搜索请求加载状态 */
   const [loading, setLoading] = useState(false);
+  /** 当前键盘高亮的结果项索引（扁平化后） */
   const [activeIndex, setActiveIndex] = useState(0);
+  /** 搜索输入框 ref，用于自动聚焦 */
   const inputRef = useRef<any>(null);
+  /** 防抖定时器 ref */
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 打开时聚焦
@@ -49,7 +129,11 @@ const GlobalSearch: React.FC<Props> = ({ open, onClose, onNavigate }) => {
     }
   }, [open]);
 
-  // 防抖搜索
+  /**
+   * 执行搜索请求，将结果写入 results 状态
+   *
+   * @param q - 搜索关键词，空字符串时清空结果
+   */
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) { setResults(null); return; }
     setLoading(true);
@@ -61,6 +145,7 @@ const GlobalSearch: React.FC<Props> = ({ open, onClose, onNavigate }) => {
     finally { setLoading(false); }
   }, []);
 
+  // 防抖：query 变化后延迟 250ms 执行搜索
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => doSearch(query), 250);
@@ -74,6 +159,11 @@ const GlobalSearch: React.FC<Props> = ({ open, onClose, onNavigate }) => {
     ...results.files.map(f => ({ type: 'file' as const, ...f })),
   ] : [];
 
+  /**
+   * 处理键盘事件，支持上下键导航、Enter 确认和 Escape 关闭
+   *
+   * @param e - React 键盘事件对象
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIndex(i => Math.min(i + 1, flatItems.length - 1)); }
     if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex(i => Math.max(i - 1, 0)); }
@@ -83,6 +173,11 @@ const GlobalSearch: React.FC<Props> = ({ open, onClose, onNavigate }) => {
     if (e.key === 'Escape') onClose();
   };
 
+  /**
+   * 处理搜索结果项的选中操作，根据类型导航到对应页面
+   *
+   * @param item - 被选中的搜索结果项（菜单/笔记/文件）
+   */
   const handleSelect = (item: any) => {
     if (item.type === 'menu') {
       onNavigate(item.key);
@@ -96,9 +191,17 @@ const GlobalSearch: React.FC<Props> = ({ open, onClose, onNavigate }) => {
     }
   };
 
+  /** 是否有搜索结果（至少一类有数据） */
   const hasResults = results && (results.menus.length + results.notes.length + results.files.length) > 0;
+  /** 是否搜索完成但无结果 */
   const isEmpty = results && !hasResults;
 
+  /**
+   * 生成结果列表项的内联样式，高亮当前激活项
+   *
+   * @param idx - 当前项在扁平化列表中的索引
+   * @returns React 内联样式对象
+   */
   const itemStyle = (idx: number): React.CSSProperties => ({
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '9px 14px', borderRadius: 8, cursor: 'pointer',

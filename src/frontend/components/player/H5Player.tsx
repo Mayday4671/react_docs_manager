@@ -1,3 +1,9 @@
+/**
+ * @file H5Player.tsx
+ * @description 海康视频 H5Player 播放器组件，集成实时预览、录像回放及控制功能
+ * @module 视频播放
+ */
+
 import React, { useEffect, useRef, useState } from 'react';
 import {
     StepBackwardOutlined,
@@ -27,7 +33,8 @@ const { Text } = Typography;
 
 /**
  * H5Player 插件实例接口定义
- * 包含常用的 JS 调用方法，支持 JSDoc 悬浮查看
+ *
+ * 包含海康 JSPlugin 常用的 JS 调用方法，支持 JSDoc 悬浮查看。
  */
 interface H5PlayerInstance {
     /** 播放器尺寸自适应 */
@@ -96,19 +103,21 @@ declare global {
 }
 
 /**
- * H5Player 组件
- * 集成海康视频 H5Player 插件，提供实时预览、回放及控制功能
+ * H5Player 视频播放器组件
+ *
+ * 集成海康视频 H5Player 插件，提供实时预览、录像回放及控制功能。
+ * 支持多分屏布局、全屏、抓图、录制、对讲、电子放大等操作。
  */
 const H5Player: React.FC = () => {
-    // 播放器实例引用
+    /** 播放器实例引用 */
     const playerRef = useRef<H5PlayerInstance | null>(null);
-    // 播放器容器引用
+    /** 播放器容器 DOM 引用，用于 ResizeObserver 监听尺寸变化 */
     const containerRef = useRef<HTMLDivElement>(null);
-    // Ant Design 主题 Token
+    /** Ant Design 主题 Token */
     const { token } = theme.useToken();
-    // 脚本加载状态
+    /** H5Player 脚本是否已加载完成 */
     const [isScriptLoaded, setIsScriptLoaded] = useState(false);
-    // 当前分屏数量
+    /** 当前分屏数量（1/2/3/4 对应 1x1/2x2/3x3/4x4） */
     const [splitNum, setSplitNum] = useState<string | number>(2); 
     
     // 动态注入样式 - 兼容暗黑模式及主题色适配
@@ -146,27 +155,26 @@ const H5Player: React.FC = () => {
         }
     `; 
     
-    // 状态量定义
-    // 实时预览地址
-    const [realplayUrl, setRealplayUrl] = useState('wss://10.19.147.57:6014/proxy/10.19.147.57:559/EUrl/KjuVUic'); 
-    // 对讲地址 
-    const [talkUrl, setTalkUrl] = useState('wss://10.19.147.57:6014/proxy/10.19.147.57:559/EUrl/KjuVUic');       
-    // 回放地址
-    const [playbackUrl, setPlaybackUrl] = useState('wss://10.19.147.57:6014/proxy/10.19.147.57:559/EUrl/KjuVUic'); 
-    // 回放开始时间
-    const [playbackStartTime, setPlaybackStartTime] = useState<string>('2023-08-16T00:00:00');                   
-    // 回放结束时间
-    const [playbackEndTime, setPlaybackEndTime] = useState<string>('2023-08-16T23:00:00');                     
-    // 定位开始时间
-    const [playbackSeekStart, setPlaybackSeekStart] = useState<string>('2023-08-16T10:00:00');                   
-    // 播放速率
-    const [playbackRate, setPlaybackRate] = useState(1);                                                            
-    // 静音状态
-    const [muted, setMuted] = useState(true);                                                                    
-    // 音量
-    const [volume, setVolume] = useState(50);                                                                   
-    // 控制台当前激活页签
-    const [activeTab, setActiveTab] = useState('1');                                                           
+    /** 实时预览 WebSocket 地址 */
+    const [realplayUrl, setRealplayUrl] = useState('wss://10.19.147.57:6014/proxy/10.19.147.57:559/EUrl/KjuVUic');
+    /** 对讲 WebSocket 地址 */
+    const [talkUrl, setTalkUrl] = useState('wss://10.19.147.57:6014/proxy/10.19.147.57:559/EUrl/KjuVUic');
+    /** 录像回放 WebSocket 地址 */
+    const [playbackUrl, setPlaybackUrl] = useState('wss://10.19.147.57:6014/proxy/10.19.147.57:559/EUrl/KjuVUic');
+    /** 回放开始时间（ISO 格式，不含时区） */
+    const [playbackStartTime, setPlaybackStartTime] = useState<string>('2023-08-16T00:00:00');
+    /** 回放结束时间（ISO 格式，不含时区） */
+    const [playbackEndTime, setPlaybackEndTime] = useState<string>('2023-08-16T23:00:00');
+    /** 回放定位目标时间（ISO 格式，不含时区） */
+    const [playbackSeekStart, setPlaybackSeekStart] = useState<string>('2023-08-16T10:00:00');
+    /** 当前播放速率，慢放/快放后由插件返回更新 */
+    const [playbackRate, setPlaybackRate] = useState(1);
+    /** 是否静音 */
+    const [muted, setMuted] = useState(true);
+    /** 当前音量（0-100） */
+    const [volume, setVolume] = useState(50);
+    /** 控制台当前激活的页签 key */
+    const [activeTab, setActiveTab] = useState('1');
 
     /**
      * 初始化播放器
@@ -271,29 +279,41 @@ const H5Player: React.FC = () => {
         };
     }, []);
 
-    // 窗口尺寸变更处理
+    /**
+     * 处理窗口尺寸变更，通知播放器重新适配容器大小
+     */
     const handleResize = () => playerRef.current?.JS_Resize();
 
     /**
      * 控制逻辑区
      */
-    
-    // 分屏排布切换
+
+    /**
+     * 切换分屏排布
+     * @param value - 分屏数量（1/2/3/4 对应 1x1/2x2/3x3/4x4）
+     */
     const handleArrangeWindow = (value: string | number) => {
         const num = Number(value);
         setSplitNum(num);
         playerRef.current?.JS_ArrangeWindow(num);
     };
 
-    // 整体全屏
+    /**
+     * 整体全屏显示
+     */
     const handleWholeFullScreen = () => playerRef.current?.JS_FullScreenDisplay(true);
-    // 选中窗口全屏
+
+    /**
+     * 当前选中窗口全屏
+     */
     const handleSingleFullScreen = () => {
         const index = playerRef.current?.currentWindowIndex || 0;
         playerRef.current?.JS_FullScreenSingle(index);
     };
 
-    // 开始预览
+    /**
+     * 开始实时预览，使用当前选中窗口播放指定 URL
+     */
     const handleRealplay = () => {
         if (!playerRef.current) return;
         const index = playerRef.current.currentWindowIndex;
@@ -303,17 +323,23 @@ const H5Player: React.FC = () => {
         );
     };
 
-    // 停止当前播放
+    /**
+     * 停止当前选中窗口的播放，并重置播放速率
+     */
     const handleStopPlay = () => {
         playerRef.current?.JS_Stop().then(() => setPlaybackRate(1));
     };
 
-    // 停止所有窗口
+    /**
+     * 停止所有窗口的播放，并重置播放速率
+     */
     const handleStopAll = () => {
         playerRef.current?.JS_StopRealPlayAll().then(() => setPlaybackRate(1));
     };
 
-    // 开启对讲
+    /**
+     * 开启对讲
+     */
     const handleTalkStart = () => {
         playerRef.current?.JS_StartTalk(talkUrl, {}).then(
             () => message.success('开始对讲'),
@@ -321,7 +347,9 @@ const H5Player: React.FC = () => {
         );
     };
 
-    // 停止对讲
+    /**
+     * 停止对讲
+     */
     const handleTalkStop = () => playerRef.current?.JS_StopTalk();
 
     /**
@@ -373,7 +401,7 @@ const H5Player: React.FC = () => {
     const handleFrameBack = () => playerRef.current?.JS_FrameBack(playerRef.current?.currentWindowIndex || 0);
 
     /**
-     * 音频与工具函数
+     * 切换静音/开声音状态
      */
     const handleToggleSound = () => {
         if (muted) {

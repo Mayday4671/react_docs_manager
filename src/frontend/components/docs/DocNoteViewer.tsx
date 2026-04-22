@@ -1,5 +1,7 @@
 /**
- * 文档笔记查看器组件
+ * @file DocNoteViewer.tsx
+ * @description 文档笔记查看器组件，支持 Markdown 渲染和 Word 文档（docx）在线预览
+ * @module 文档笔记
  *
  * 负责渲染笔记内容，支持两种内容类型：
  *   - markdown（fileType = 'md' 或未设置）：使用 ReactMarkdown + Prism 代码高亮渲染

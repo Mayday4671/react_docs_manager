@@ -1,3 +1,9 @@
+/**
+ * @file RoleManagement.tsx
+ * @description 系统角色管理页面，支持角色的新增、编辑、删除及统计概览展示
+ * @module 系统管理
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Table, Button, Space, Modal, Form, Input, message, 
@@ -11,26 +17,50 @@ import type { ColumnsType } from 'antd/es/table';
 
 const { TextArea } = Input;
 
+/**
+ * 角色数据结构
+ */
 interface Role {
+  /** 角色唯一标识 */
   id: number;
+  /** 角色显示名称 */
   roleName: string;
+  /** 角色标识符，用于权限判断（仅小写字母和下划线） */
   roleKey: string;
+  /** 角色描述信息 */
   description?: string;
+  /** 状态：1-启用 0-禁用 */
   status: number;
+  /** 创建时间（ISO 字符串） */
   createdAt: string;
+  /** 关联统计数据 */
   _count?: {
+    /** 该角色下的用户数量 */
     users: number;
   };
 }
 
+/**
+ * 角色管理组件
+ *
+ * 提供系统角色的完整 CRUD 管理界面，顶部展示角色统计卡片，
+ * 下方为角色列表表格，支持新增和编辑弹窗。
+ */
 const RoleManagement: React.FC = () => {
+  /** 角色列表数据 */
   const [roles, setRoles] = useState<Role[]>([]);
+  /** 表格加载状态 */
   const [loading, setLoading] = useState(false);
+  /** 新增/编辑弹窗是否打开 */
   const [isModalOpen, setIsModalOpen] = useState(false);
+  /** 当前正在编辑的角色，null 表示新增模式 */
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [form] = Form.useForm();
 
-  // 获取角色列表
+  /**
+   * 获取角色列表
+   * @returns Promise<void>
+   */
   const fetchRoles = async () => {
     setLoading(true);
     try {
@@ -48,7 +78,10 @@ const RoleManagement: React.FC = () => {
     fetchRoles();
   }, []);
 
-  // 打开新增/编辑弹窗
+  /**
+   * 打开新增或编辑弹窗
+   * @param role - 传入时为编辑模式，不传时为新增模式
+   */
   const handleOpenModal = (role?: Role) => {
     if (role) {
       setEditingRole(role);
@@ -60,7 +93,10 @@ const RoleManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // 提交表单
+  /**
+   * 提交新增或编辑表单
+   * @returns Promise<void>
+   */
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -88,12 +124,15 @@ const RoleManagement: React.FC = () => {
     }
   };
 
-  // 删除角色
+  /**
+   * 删除指定角色
+   * @param id - 要删除的角色 ID
+   */
   const handleDelete = async (id: number) => {
     message.info('删除功能开发中...');
   };
 
-  // 表格列定义
+  /** 表格列定义 */
   const columns: ColumnsType<Role> = [
     {
       title: 'ID',

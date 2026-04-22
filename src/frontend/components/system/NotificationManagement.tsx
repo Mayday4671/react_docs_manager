@@ -1,3 +1,9 @@
+/**
+ * @file NotificationManagement.tsx
+ * @description 系统通知管理页面，支持通知的新增、查看、编辑、删除及分页列表展示
+ * @module 系统管理
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Table, Button, Space, Modal, Form, Input, Select, message, 
@@ -12,26 +18,51 @@ import dayjs from 'dayjs';
 
 const { TextArea } = Input;
 
+/**
+ * 通知数据结构
+ */
 interface Notification {
+  /** 通知唯一标识 */
   id: number;
+  /** 通知标题 */
   title: string;
+  /** 通知正文内容 */
   content?: string;
+  /** 通知类型：info / success / warning / error */
   type: string;
+  /** 优先级：0-普通 1-重要 2-紧急 */
   priority: number;
+  /** 状态：1-已发布 0-草稿 */
   status: number;
+  /** 已读次数 */
   readCount: number;
+  /** 发布时间（ISO 字符串） */
   publishAt?: string;
+  /** 过期时间（ISO 字符串） */
   expireAt?: string;
+  /** 创建时间（ISO 字符串） */
   createdAt: string;
 }
 
+/**
+ * 通知管理组件
+ *
+ * 提供系统通知的完整 CRUD 管理界面，包含分页列表、新增/编辑弹窗及详情查看弹窗。
+ */
 const NotificationManagement: React.FC = () => {
+  /** 通知列表数据 */
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  /** 表格加载状态 */
   const [loading, setLoading] = useState(false);
+  /** 新增/编辑弹窗是否打开 */
   const [isModalOpen, setIsModalOpen] = useState(false);
+  /** 查看详情弹窗是否打开 */
   const [viewModalOpen, setViewModalOpen] = useState(false);
+  /** 当前正在编辑的通知，null 表示新增模式 */
   const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
+  /** 当前正在查看详情的通知 */
   const [viewingNotification, setViewingNotification] = useState<Notification | null>(null);
+  /** 分页配置：当前页、每页条数、总条数 */
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -39,7 +70,11 @@ const NotificationManagement: React.FC = () => {
   });
   const [form] = Form.useForm();
 
-  // 获取通知列表
+  /**
+   * 获取通知列表
+   * @param page - 当前页码，默认第 1 页
+   * @param pageSize - 每页条数，默认 10 条
+   */
   const fetchNotifications = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
@@ -62,7 +97,10 @@ const NotificationManagement: React.FC = () => {
     fetchNotifications();
   }, []);
 
-  // 打开新增/编辑弹窗
+  /**
+   * 打开新增或编辑弹窗
+   * @param notification - 传入时为编辑模式，不传时为新增模式
+   */
   const handleOpenModal = (notification?: Notification) => {
     if (notification) {
       setEditingNotification(notification);
@@ -78,13 +116,19 @@ const NotificationManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // 查看详情
+  /**
+   * 打开通知详情查看弹窗
+   * @param notification - 要查看的通知对象
+   */
   const handleView = (notification: Notification) => {
     setViewingNotification(notification);
     setViewModalOpen(true);
   };
 
-  // 提交表单
+  /**
+   * 提交新增或编辑表单
+   * @returns Promise<void>
+   */
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -118,12 +162,19 @@ const NotificationManagement: React.FC = () => {
     }
   };
 
-  // 删除通知
+  /**
+   * 删除指定通知
+   * @param id - 要删除的通知 ID
+   */
   const handleDelete = async (id: number) => {
     message.info('删除功能开发中...');
   };
 
-  // 类型标签颜色
+  /**
+   * 根据通知类型返回对应的 Tag 颜色
+   * @param type - 通知类型字符串（info / success / warning / error）
+   * @returns Ant Design Tag 颜色字符串
+   */
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
       info: 'blue',
@@ -134,7 +185,11 @@ const NotificationManagement: React.FC = () => {
     return colors[type] || 'default';
   };
 
-  // 优先级标签
+  /**
+   * 根据优先级返回对应的 Tag 元素
+   * @param priority - 优先级数值（0-普通 1-重要 2-紧急）
+   * @returns 带颜色的 Ant Design Tag 组件
+   */
   const getPriorityTag = (priority: number) => {
     const tags: Record<number, { text: string; color: string }> = {
       0: { text: '普通', color: 'default' },
@@ -145,7 +200,7 @@ const NotificationManagement: React.FC = () => {
     return <Tag color={tag.color}>{tag.text}</Tag>;
   };
 
-  // 表格列定义
+  /** 表格列定义 */
   const columns: ColumnsType<Notification> = [
     {
       title: 'ID',

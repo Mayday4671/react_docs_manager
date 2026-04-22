@@ -1,7 +1,8 @@
 /**
- * 文档笔记编辑器组件
+ * @file DocNoteEditor.tsx
+ * @description 文档笔记编辑器组件，用于新建和编辑笔记，提供标题、分类、标签输入及 Markdown 实时预览
+ * @module 文档笔记
  *
- * 用于新建和编辑笔记，提供标题、分类、标签输入，以及 Markdown 实时预览编辑器。
  * 编辑器使用 @uiw/react-md-editor，通过 next/dynamic 动态加载以避免 SSR 报错。
  */
 

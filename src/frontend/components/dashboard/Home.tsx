@@ -1,3 +1,9 @@
+/**
+ * @file Home.tsx
+ * @description 首页 Dashboard 组件，包含快捷入口卡片、访问趋势图表、设备状态饼图、通知公告和更新日志
+ * @module 仪表盘
+ */
+
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Row, Col, Card, Typography, Space, theme, message, Button, Grid } from 'antd';
 import { 
@@ -19,20 +25,28 @@ const { useBreakpoint } = Grid;
 
 /**
  * 首页 Dashboard 组件
- * 包含快捷入口、业务数据图表展示
+ *
+ * 包含快捷入口、访问趋势面积图、设备状态饼图、通知公告和更新日志。
+ * 支持响应式布局，移动端自动切换为纵向滚动模式。
  */
 const Home: React.FC = () => {
     const { token } = theme.useToken();
     const screens = useBreakpoint();
+    /** 通知公告列表容器 ref，用于 ResizeObserver 监听高度变化 */
     const noticeBodyRef = useRef<HTMLDivElement>(null);
+    /** 更新日志列表容器 ref，用于 ResizeObserver 监听高度变化 */
     const changelogBodyRef = useRef<HTMLDivElement>(null);
     
+    /** 各列表区域可见条目数，根据容器高度动态计算 */
     const [visibleCounts, setVisibleCounts] = useState({ notice: 5, changelog: 5 });
 
     // 状态判定
+    /** 是否为移动端（md 断点以下） */
     const isMobile = !screens.md;
+    /** 是否为最小屏幕（sm 断点以下），用于隐藏次要信息 */
     const isSmallest = !screens.sm;
 
+    /** 卡片通用样式，统一圆角、边框和布局 */
     const cardStyle: React.CSSProperties = {
         borderRadius: 12,
         border: `1px solid ${token.colorPrimary}15`,
@@ -43,6 +57,10 @@ const Home: React.FC = () => {
         overflow: 'hidden'
     };
 
+    /**
+     * 使用 ResizeObserver 监听列表容器高度变化，动态计算可见条目数。
+     * 防抖 150ms 避免频繁更新，移动端跳过计算直接显示全部。
+     */
     useEffect(() => {
         const ITEM_HEIGHT = 50;
         if (typeof window === 'undefined') return;
@@ -83,6 +101,12 @@ const Home: React.FC = () => {
         };
     }, [isMobile]);
 
+    /**
+     * 快捷入口卡片点击处理器。
+     * 通过派发自定义事件 switchTab 通知布局组件切换标签页。
+     *
+     * @param key - 目标菜单 key，'settings' 或空值时提示功能开发中
+     */
     const handleCardClick = (key: string) => {
         if (!key || key === 'settings') {
             message.info('该功能正在开发中...');
@@ -92,6 +116,7 @@ const Home: React.FC = () => {
         window.dispatchEvent(event);
     };
 
+    /** 快捷入口卡片配置列表 */
     const quickLinks = [
         { title: '视频预览', desc: '实时监控与分屏', icon: <VideoCameraOutlined />, color: '#52c41a', key: 'h5-player' },
         { title: '用户中心', desc: '系统用户管理', icon: <UserOutlined />, color: '#1890ff', key: '1' },
@@ -99,16 +124,19 @@ const Home: React.FC = () => {
         { title: '系统设置', desc: '参数个性化配置', icon: <SettingOutlined />, color: '#fa8c16', key: 'settings' },
     ];
 
+    /** 访问趋势面积图数据（24小时时间点 + 访问量） */
     const areaData = useMemo(() => [
         { time: '00:00', value: 120 }, { time: '04:00', value: 60 }, { time: '08:00', value: 380 },
         { time: '12:00', value: 350 }, { time: '16:00', value: 520 }, { time: '20:00', value: 390 },
         { time: '24:00', value: 180 },
     ], []);
 
+    /** 设备状态饼图数据（在线/离线/异常分布） */
     const pieData = useMemo(() => [
         { type: '在线', value: 45 }, { type: '离线', value: 12 }, { type: '异常', value: 8 }
     ], []);
 
+    /** 通知公告数据列表 */
     const allNotices = [
         { id: 1, title: '关于系统 V4 版本全面升级的通知', date: '2024-05-20', type: 'new', icon: <BellFilled /> },
         { id: 2, title: '端午节期间服务器例行维护公告', date: '2024-05-18', type: 'info', icon: <InfoCircleFilled /> },
@@ -117,6 +145,7 @@ const Home: React.FC = () => {
         { id: 5, title: '新增 H5Player 多路并发预览支持', date: '2024-05-10', type: 'new', icon: <BellFilled /> },
     ];
 
+    /** 更新日志数据列表 */
     const allChangelogs = [
         { version: 'V4.2.5', date: '2024-05-20', desc: '首页布局实时响应优化', icon: <RocketFilled /> },
         { version: 'V4.2.0', date: '2024-05-18', desc: '修复图表缩放重绘延迟问题', icon: <StarFilled /> },

@@ -1,3 +1,8 @@
+/**
+ * @file ThemeSettings.tsx
+ * @description 主题设置抽屉组件，提供主题预设、主题色、字号、圆角、导航模式等个性化配置
+ * @module 布局
+ */
 
 import React from 'react';
 import { Divider, ColorPicker, Typography, theme, Tooltip, Row, Col, Switch, Slider } from 'antd';
@@ -6,17 +11,25 @@ import { useTheme } from '@/frontend/context/ThemeContext';
 
 const { Text, Title } = Typography;
 /**
- * 主题属性
+ * 主题设置抽屉组件的 Props
  */
 interface ThemeSettingsProps {
+  /** 抽屉是否处于打开状态 */
   open: boolean;
+  /** 关闭抽屉的回调 */
   onClose: () => void;
+  /** 切换抽屉开关状态的回调（用于手柄按钮） */
   onToggle: () => void;
 }
 /**
- * 主题设置
- * @param param0 
- * @returns 
+ * 主题设置抽屉组件
+ *
+ * 从页面右侧滑入的主题配置面板，支持预设主题切换、主题色选择、
+ * 字号调整、圆角大小、紧凑模式及导航布局模式等设置。
+ *
+ * @param open - 抽屉是否打开
+ * @param onClose - 关闭抽屉的回调
+ * @param onToggle - 切换抽屉开关状态的回调
  */
 const ThemeSettings: React.FC<ThemeSettingsProps> = ({ open, onClose, onToggle }) => {
   const { 
@@ -30,6 +43,7 @@ const ThemeSettings: React.FC<ThemeSettingsProps> = ({ open, onClose, onToggle }
 
   const { token } = theme.useToken();
 
+  /** 主题预设列表，包含暗黑模式标志、主色及卡片预览色 */
   const themePresets = [
     { 
       key: 'default', 
@@ -73,6 +87,7 @@ const ThemeSettings: React.FC<ThemeSettingsProps> = ({ open, onClose, onToggle }
     },
   ];
 
+  /** 主题色预设列表，来自 Ant Design 官方色板 */
   const colorPresets = [
     { color: '#1677FF', name: 'Tech Blue' },
     { color: '#722ED1', name: 'Geek Purple' },
@@ -85,21 +100,21 @@ const ThemeSettings: React.FC<ThemeSettingsProps> = ({ open, onClose, onToggle }
     { color: '#FA541C', name: 'Volcano' },
     { color: '#2F54EB', name: 'Geek Blue' },
   ];
-/**
- * 处理预设点击事件
- * @param preset 
- */
+  /**
+   * 处理预设主题点击，同步切换暗黑模式和主题色
+   * @param preset - 被点击的预设主题对象
+   */
   const handlePresetClick = (preset: typeof themePresets[0]) => {
       if (darkMode !== preset.dark) {
           toggleTheme();
       }
       setColorPrimary(preset.color);
   };
-/**
- * 渲染预设卡片
- * @param preset 
- * @returns 
- */
+  /**
+   * 渲染主题预设卡片
+   * @param preset - 预设主题对象
+   * @returns 可点击的预设卡片 JSX 元素
+   */
   const renderPresetCard = (preset: typeof themePresets[0]) => {
       const isSelected = darkMode === preset.dark && colorPrimary.toLowerCase() === preset.color.toLowerCase();
       
@@ -140,12 +155,12 @@ const ThemeSettings: React.FC<ThemeSettingsProps> = ({ open, onClose, onToggle }
         </div>
       );
   };
-/**
- * 渲染布局卡片
- * @param type 
- * @param title 
- * @returns 
- */
+  /**
+   * 渲染导航布局模式卡片
+   * @param type - 布局类型：side-侧边 / top-顶部 / mix-混合
+   * @param title - 卡片 Tooltip 提示文字
+   * @returns 可点击的布局卡片 JSX 元素
+   */
   const renderLayoutCard = (type: 'side' | 'top' | 'mix', title: string) => {
       const isSelected = layout === type;
       return (

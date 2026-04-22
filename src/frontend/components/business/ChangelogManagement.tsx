@@ -1,3 +1,9 @@
+/**
+ * @file ChangelogManagement.tsx
+ * @description 更新日志管理页面，支持版本日志的新增、查看、编辑、删除及列表展示
+ * @module 业务管理
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Table, Button, Space, Modal, Form, Input, Select, message, 
@@ -12,27 +18,52 @@ import dayjs from 'dayjs';
 
 const { TextArea } = Input;
 
+/**
+ * 更新日志数据结构
+ */
 interface Changelog {
+  /** 日志唯一标识 */
   id: number;
+  /** 版本号，格式为 x.y.z */
   version: string;
+  /** 更新标题 */
   title: string;
+  /** 更新内容详情 */
   content?: string;
+  /** 变更类型：feature-新功能 / bugfix-修复 / improvement-优化 / breaking-破坏性变更 */
   type: string;
+  /** 状态：1-已发布 0-草稿 */
   status: number;
+  /** 发布时间（ISO 字符串） */
   publishAt?: string;
+  /** 创建时间（ISO 字符串） */
   createdAt: string;
 }
 
+/**
+ * 更新日志管理组件
+ *
+ * 提供版本更新日志的完整 CRUD 管理界面，包含列表展示、新增/编辑弹窗及详情查看弹窗。
+ */
 const ChangelogManagement: React.FC = () => {
+  /** 更新日志列表数据 */
   const [changelogs, setChangelogs] = useState<Changelog[]>([]);
+  /** 表格加载状态 */
   const [loading, setLoading] = useState(false);
+  /** 新增/编辑弹窗是否打开 */
   const [isModalOpen, setIsModalOpen] = useState(false);
+  /** 查看详情弹窗是否打开 */
   const [viewModalOpen, setViewModalOpen] = useState(false);
+  /** 当前正在编辑的日志，null 表示新增模式 */
   const [editingChangelog, setEditingChangelog] = useState<Changelog | null>(null);
+  /** 当前正在查看详情的日志 */
   const [viewingChangelog, setViewingChangelog] = useState<Changelog | null>(null);
   const [form] = Form.useForm();
 
-  // 获取更新日志列表
+  /**
+   * 获取更新日志列表
+   * @returns Promise<void>
+   */
   const fetchChangelogs = async () => {
     setLoading(true);
     try {
@@ -50,7 +81,10 @@ const ChangelogManagement: React.FC = () => {
     fetchChangelogs();
   }, []);
 
-  // 打开新增/编辑弹窗
+  /**
+   * 打开新增或编辑弹窗
+   * @param changelog - 传入时为编辑模式，不传时为新增模式
+   */
   const handleOpenModal = (changelog?: Changelog) => {
     if (changelog) {
       setEditingChangelog(changelog);
@@ -65,13 +99,19 @@ const ChangelogManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // 查看详情
+  /**
+   * 打开日志详情查看弹窗
+   * @param changelog - 要查看的日志对象
+   */
   const handleView = (changelog: Changelog) => {
     setViewingChangelog(changelog);
     setViewModalOpen(true);
   };
 
-  // 提交表单
+  /**
+   * 提交新增或编辑表单
+   * @returns Promise<void>
+   */
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -104,12 +144,19 @@ const ChangelogManagement: React.FC = () => {
     }
   };
 
-  // 删除更新日志
+  /**
+   * 删除指定更新日志
+   * @param id - 要删除的日志 ID
+   */
   const handleDelete = async (id: number) => {
     message.info('删除功能开发中...');
   };
 
-  // 类型标签颜色
+  /**
+   * 根据变更类型返回对应的 Tag 颜色
+   * @param type - 变更类型字符串（feature / bugfix / improvement / breaking）
+   * @returns Ant Design Tag 颜色字符串
+   */
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
       feature: 'blue',
@@ -120,7 +167,11 @@ const ChangelogManagement: React.FC = () => {
     return colors[type] || 'default';
   };
 
-  // 类型文本
+  /**
+   * 根据变更类型返回对应的中文文本
+   * @param type - 变更类型字符串（feature / bugfix / improvement / breaking）
+   * @returns 中文类型名称
+   */
   const getTypeText = (type: string) => {
     const texts: Record<string, string> = {
       feature: '新功能',
@@ -131,7 +182,7 @@ const ChangelogManagement: React.FC = () => {
     return texts[type] || type;
   };
 
-  // 表格列定义
+  /** 表格列定义 */
   const columns: ColumnsType<Changelog> = [
     {
       title: 'ID',

@@ -1,3 +1,9 @@
+/**
+ * @file UserManagement.tsx
+ * @description 系统用户管理页面，支持用户的新增、编辑、删除及分页列表展示
+ * @module 系统管理
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Table, Button, Space, Modal, Form, Input, Select, message, 
@@ -9,24 +15,47 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 
+/**
+ * 用户数据结构
+ */
 interface User {
+  /** 用户唯一标识 */
   id: number;
+  /** 登录用户名 */
   username: string;
+  /** 用户邮箱 */
   email?: string;
+  /** 用户手机号 */
   phone?: string;
+  /** 状态：1-启用 0-禁用 */
   status: number;
+  /** 关联角色 ID */
   roleId?: number;
+  /** 关联角色信息 */
   role?: {
+    /** 角色显示名称 */
     roleName: string;
   };
+  /** 创建时间（ISO 字符串） */
   createdAt: string;
 }
 
+/**
+ * 用户管理组件
+ *
+ * 提供系统用户的完整 CRUD 管理界面，顶部展示用户统计卡片，
+ * 下方为用户列表表格，支持分页、新增和编辑弹窗。
+ */
 const UserManagement: React.FC = () => {
+  /** 用户列表数据 */
   const [users, setUsers] = useState<User[]>([]);
+  /** 表格加载状态 */
   const [loading, setLoading] = useState(false);
+  /** 新增/编辑弹窗是否打开 */
   const [isModalOpen, setIsModalOpen] = useState(false);
+  /** 当前正在编辑的用户，null 表示新增模式 */
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  /** 分页配置：当前页、每页条数、总条数 */
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -34,7 +63,12 @@ const UserManagement: React.FC = () => {
   });
   const [form] = Form.useForm();
 
-  // 获取用户列表
+  /**
+   * 获取用户列表
+   * @param page - 当前页码，默认第 1 页
+   * @param pageSize - 每页条数，默认 10 条
+   * @returns Promise<void>
+   */
   const fetchUsers = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {
@@ -57,7 +91,10 @@ const UserManagement: React.FC = () => {
     fetchUsers();
   }, []);
 
-  // 打开新增/编辑弹窗
+  /**
+   * 打开新增或编辑弹窗
+   * @param user - 传入时为编辑模式，不传时为新增模式
+   */
   const handleOpenModal = (user?: User) => {
     if (user) {
       setEditingUser(user);
@@ -69,7 +106,10 @@ const UserManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // 提交表单
+  /**
+   * 提交新增或编辑表单
+   * @returns Promise<void>
+   */
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -99,12 +139,15 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  // 删除用户
+  /**
+   * 删除指定用户
+   * @param id - 要删除的用户 ID
+   */
   const handleDelete = async (id: number) => {
     message.info('删除功能开发中...');
   };
 
-  // 表格列定义
+  /** 表格列定义 */
   const columns: ColumnsType<User> = [
     {
       title: 'ID',

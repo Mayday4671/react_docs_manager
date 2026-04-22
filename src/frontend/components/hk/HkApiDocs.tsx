@@ -1,4 +1,10 @@
-﻿'use client';
+﻿/**
+ * @file HkApiDocs.tsx
+ * @description 海康 OpenAPI 文档浏览与调试组件，支持分类树导航、API 详情查看、在线调试及配置管理
+ * @module 海康API
+ */
+
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -44,85 +50,158 @@ import JsonView from '@uiw/react-json-view';
 const { Search } = Input;
 const { Text, Title, Paragraph } = Typography;
 
+/**
+ * API 分类数据结构
+ */
 interface ApiCategory {
+  /** 分类唯一标识 */
   id: number;
+  /** 分类名称 */
   name: string;
+  /** 分类描述 */
   description?: string;
+  /** 分类图标名称 */
   icon?: string;
+  /** 父分类 ID，null 表示顶级分类 */
   parentId?: number | null;
+  /** 排序序号 */
   orderNum: number;
+  /** 该分类下的 API 列表 */
   apis?: HkApi[];
+  /** 子分类列表 */
   children?: ApiCategory[];
 }
 
+/**
+ * 海康 API 接口数据结构
+ */
 interface HkApi {
+  /** API 唯一标识 */
   id: number;
+  /** API 名称 */
   name: string;
+  /** API 路径，如 /artemis/api/resource/v1/cameras */
   path: string;
+  /** HTTP 请求方法：GET / POST / PUT / DELETE 等 */
   method: string;
+  /** API 详细描述 */
   description?: string;
+  /** API 摘要（简短说明） */
   summary?: string;
+  /** 所属分类 ID */
   categoryId: number;
+  /** 所属分类信息（关联查询返回） */
   category?: {
+    /** 分类 ID */
     id: number;
+    /** 分类名称 */
     name: string;
+    /** 分类描述 */
     description?: string;
+    /** 分类图标 */
     icon?: string;
+    /** 排序序号 */
     orderNum: number;
   };
+  /** 请求头示例（JSON 字符串） */
   requestHeaders?: string;
+  /** URL 查询参数示例（JSON 字符串） */
   requestParams?: string;
+  /** 请求体示例（JSON 字符串） */
   requestBody?: string;
+  /** 响应示例（JSON 字符串） */
   responseExample?: string;
+  /** 响应结构说明（JSON 字符串） */
   responseSchema?: string;
+  /** API 版本号，如 'v1' */
   version?: string;
+  /** 是否已弃用：1-已弃用 0-正常 */
   deprecated: number;
+  /** 是否需要认证：1-需要 0-不需要 */
   needAuth: number;
+  /** 限流说明 */
   rateLimit?: string;
+  /** 备注信息 */
   notes?: string;
+  /** 累计调用次数 */
   callCount: number;
+  /** 最后调用时间 */
   lastCall?: string;
+  /** 状态：1-启用 0-禁用 */
   status: number;
 }
 
+/**
+ * API 统计数据结构
+ */
 interface ApiStats {
+  /** API 总数 */
   totalApis: number;
+  /** 分类总数 */
   totalCategories: number;
+  /** 总调用次数 */
   totalCalls: number;
+  /** 最近调用的 API 列表 */
   recentApis: HkApi[];
 }
 
+/**
+ * 海康 API 文档浏览与调试组件
+ *
+ * 左侧展示分类树（支持多级），右侧展示选中分类下的 API 列表。
+ * 点击 API 可打开详情抽屉，支持在线调试（通过后端代理转发，避免 CORS）。
+ * 支持保存多套调试配置（baseUrl / appKey / appSecret），可设置默认配置。
+ */
 const HkApiDocs: React.FC = () => {
   const { darkMode, colorPrimary } = useTheme();
   const { message: messageApi, modal: modalApi } = App.useApp();
+  /** 分类树数据列表（含嵌套子分类和 API） */
   const [categories, setCategories] = useState<ApiCategory[]>([]);
+  /** 当前选中的分类，用于右侧 API 列表展示 */
   const [selectedCategory, setSelectedCategory] = useState<ApiCategory | null>(null);
+  /** 当前在详情抽屉中查看的 API */
   const [selectedApi, setSelectedApi] = useState<HkApi | null>(null);
+  /** 统计数据（总 API 数、分类数、调用次数等） */
   const [stats, setStats] = useState<ApiStats | null>(null);
+  /** 页面初始加载状态 */
   const [loading, setLoading] = useState(true);
+  /** 搜索关键词 */
   const [searchKeyword, setSearchKeyword] = useState('');
+  /** 搜索结果列表 */
   const [searchResults, setSearchResults] = useState<HkApi[]>([]);
+  /** API 详情抽屉是否可见 */
   const [drawerVisible, setDrawerVisible] = useState(false);
+  /** 分类树展开的节点 key 列表 */
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   
-  // API调试配置状态
+  /** API 调试配置（baseUrl / appKey / appSecret） */
   const [debugConfig, setDebugConfig] = useState({
     baseUrl: 'http://127.0.0.1:80',
     appKey: '',
     appSecret: ''
   });
+  /** 调试响应结果字符串（JSON 格式） */
   const [debugResponse, setDebugResponse] = useState<string>('');
+  /** 调试请求加载状态 */
   const [debugLoading, setDebugLoading] = useState(false);
+  /** 用户在调试面板中编辑的请求体文本 */
   const [editedRequestBody, setEditedRequestBody] = useState<string>('');
+  /** 当前请求体是否来自 localStorage 保存的内容 */
   const [isUsingSavedBody, setIsUsingSavedBody] = useState(false);
   
-  // 配置管理状态
+  /** 已保存的调试配置列表 */
   const [savedConfigs, setSavedConfigs] = useState<any[]>([]);
+  /** 当前选中的配置 ID */
   const [selectedConfigId, setSelectedConfigId] = useState<number | null>(null);
+  /** 保存配置弹窗是否可见 */
   const [configModalVisible, setConfigModalVisible] = useState(false);
+  /** 配置管理弹窗是否可见 */
   const [configManageModalVisible, setConfigManageModalVisible] = useState(false);
+  /** 删除确认弹窗是否可见 */
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  /** 待删除的配置对象 */
   const [configToDelete, setConfigToDelete] = useState<any>(null);
+  /** 保存配置表单数据 */
   const [configForm, setConfigForm] = useState({
     name: '',
     baseUrl: '',
@@ -132,7 +211,10 @@ const HkApiDocs: React.FC = () => {
     isDefault: 0
   });
 
-  // 获取分类和API数据
+  /**
+   * 并发拉取分类树和统计数据，完成后更新 state。
+   * 默认选中第一个顶级分类。
+   */
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -165,7 +247,12 @@ const HkApiDocs: React.FC = () => {
     }
   };
 
-  // 搜索API
+  /**
+   * 根据关键词搜索 API，结果展示在左侧树区域。
+   * 关键词为空时清空搜索结果，恢复分类树视图。
+   *
+   * @param keyword - 搜索关键词
+   */
   const handleSearch = async (keyword: string) => {
     setSearchKeyword(keyword);
     if (!keyword.trim()) {
@@ -185,7 +272,11 @@ const HkApiDocs: React.FC = () => {
     }
   };
 
-  // 增加API调用次数
+  /**
+   * 增加指定 API 的调用次数统计，成功后刷新页面数据。
+   *
+   * @param apiId - 要更新调用统计的 API ID
+   */
   const handleApiCall = async (apiId: number) => {
     try {
       await fetch('/api/hk-apis', {
@@ -201,7 +292,15 @@ const HkApiDocs: React.FC = () => {
     }
   };
 
-  // 查看API详情
+  /**
+   * 打开 API 详情抽屉，并初始化请求体编辑器内容。
+   *
+   * 优先从 localStorage 读取用户上次保存的请求体；
+   * 若无保存记录则使用 API 的示例请求体；
+   * 若 API 也无示例则默认填入 '{}'。
+   *
+   * @param api - 要查看详情的 API 对象
+   */
   const handleViewApiDetail = (api: HkApi) => {
     setSelectedApi(api);
     setDrawerVisible(true);
@@ -245,7 +344,9 @@ const HkApiDocs: React.FC = () => {
     setDebugResponse(''); // 清空之前的响应
   };
 
-  // 加载保存的配置
+  /**
+   * 从服务端加载已保存的调试配置列表，并自动应用默认配置。
+   */
   const loadSavedConfigs = async () => {
     try {
       const response = await fetch('/api/hk-configs');
@@ -269,7 +370,11 @@ const HkApiDocs: React.FC = () => {
     }
   };
 
-  // 选择配置
+  /**
+   * 切换当前使用的调试配置，将选中配置的参数填入调试表单。
+   *
+   * @param configId - 要切换的配置 ID
+   */
   const handleSelectConfig = (configId: number) => {
     const config = savedConfigs.find(c => c.id === configId);
     if (config) {
@@ -283,7 +388,9 @@ const HkApiDocs: React.FC = () => {
     }
   };
 
-  // 保存当前配置
+  /**
+   * 打开保存配置弹窗，预填当前调试表单中的 baseUrl / appKey / appSecret。
+   */
   const handleSaveConfig = () => {
     setConfigForm({
       name: '',
@@ -296,7 +403,10 @@ const HkApiDocs: React.FC = () => {
     setConfigModalVisible(true);
   };
 
-  // 提交保存配置
+  /**
+   * 提交保存配置表单，调用 POST /api/hk-configs 创建新配置。
+   * 成功后关闭弹窗并刷新配置列表。
+   */
   // 提交保存配置
   const handleSubmitConfig = async () => {
     if (!configForm.name) {
@@ -329,7 +439,12 @@ const HkApiDocs: React.FC = () => {
     }
   };
 
-  // 删除配置
+  /**
+   * 删除指定调试配置。
+   * 若删除的是当前选中配置，则清空 selectedConfigId。
+   *
+   * @param configId - 要删除的配置 ID
+   */
   const handleDeleteConfig = async (configId: number) => {
     try {
       const response = await fetch(`/api/hk-configs?id=${configId}`, {
@@ -354,7 +469,11 @@ const HkApiDocs: React.FC = () => {
     }
   };
 
-  // 设置默认配置
+  /**
+   * 将指定配置设为默认配置，下次加载页面时自动应用。
+   *
+   * @param configId - 要设为默认的配置 ID
+   */
   const handleSetDefaultConfig = async (configId: number) => {
     try {
       const response = await fetch('/api/hk-configs', {
@@ -380,7 +499,12 @@ const HkApiDocs: React.FC = () => {
     loadSavedConfigs();
   }, []);
 
-  // 构建树形数据（支持多级分类）
+  /**
+   * 将分类数据递归构建为 Ant Design Tree 所需的 DataNode 树结构。
+   * 分类节点包含子分类和 API 叶子节点，API 节点显示 HTTP 方法标签和名称。
+   *
+   * @returns Tree 组件的 treeData 数组
+   */
   const buildTreeData = () => {
     if (!categories || categories.length === 0) {
       console.log('buildTreeData: 没有分类数据');
@@ -467,7 +591,12 @@ const HkApiDocs: React.FC = () => {
     return treeData;
   };
 
-  // 获取方法标签颜色
+  /**
+   * 根据 HTTP 方法返回对应的 Ant Design Tag 颜色。
+   *
+   * @param method - HTTP 方法字符串（大小写不敏感）
+   * @returns Ant Design Tag color 字符串
+   */
   const getMethodColor = (method: string) => {
     const colors: Record<string, string> = {
       'GET': 'green',
@@ -479,7 +608,13 @@ const HkApiDocs: React.FC = () => {
     return colors[method.toUpperCase()] || 'default';
   };
 
-  // 递归查找分类
+  /**
+   * 在分类树中递归查找指定 ID 的分类节点。
+   *
+   * @param categories - 分类列表（支持嵌套）
+   * @param id - 目标分类 ID
+   * @returns 找到的分类对象，未找到时返回 null
+   */
   const findCategoryById = (categories: ApiCategory[], id: number): ApiCategory | null => {
     for (const cat of categories) {
       if (cat.id === id) return cat;
@@ -491,7 +626,13 @@ const HkApiDocs: React.FC = () => {
     return null;
   };
 
-  // 树节点选择处理
+  /**
+   * 树节点选择处理器。
+   * 分类节点：更新右侧 API 列表；API 节点：直接打开详情抽屉。
+   *
+   * @param selectedKeys - 选中的节点 key 数组
+   * @param info - 树节点信息对象
+   */
   const handleTreeSelect = (selectedKeys: React.Key[], info: any) => {
     const key = selectedKeys[0];
     if (!key) return;
@@ -513,7 +654,13 @@ const HkApiDocs: React.FC = () => {
     }
   };
 
-  // 渲染API列表项
+  /**
+   * 渲染单个 API 列表项卡片。
+   * 包含 HTTP 方法标签、API 名称路径、调用次数、详情和调用按钮。
+   *
+   * @param api - 要渲染的 API 对象
+   * @returns API 列表项 JSX
+   */
   const renderApiListItem = (api: HkApi) => {
     return (
       <div key={api.id} style={{ marginBottom: '8px' }}>
@@ -666,7 +813,11 @@ const HkApiDocs: React.FC = () => {
     );
   };
 
-  // 渲染统计卡片
+  /**
+   * 渲染顶部统计卡片区域（API 总数、分类总数、总调用次数、最近使用数）。
+   *
+   * @returns 统计卡片 JSX，stats 为 null 时返回 null
+   */
   const renderStatsCards = () => {
     if (!stats) return null;
 
@@ -752,7 +903,13 @@ const HkApiDocs: React.FC = () => {
     );
   };
 
-  // 实际调用API
+  /**
+   * 通过后端代理接口实际调用海康 API，避免浏览器 CORS 限制。
+   *
+   * 调用前校验 baseUrl / appKey / appSecret 是否填写，
+   * 请求体使用用户在编辑器中编辑的 JSON 内容。
+   * 响应结果以 JSON 树形式展示在调试面板中。
+   */
   const handleRealApiCall = async () => {
     if (!debugConfig.baseUrl) {
       messageApi.error('请输入目标地址');
@@ -818,7 +975,11 @@ const HkApiDocs: React.FC = () => {
     }
   };
 
-  // 渲染API详情抽屉
+  /**
+   * 渲染 API 详情抽屉，包含调试配置、基本信息、接口说明、请求参数、响应示例和备注。
+   *
+   * @returns 抽屉 JSX，selectedApi 为 null 时返回 null
+   */
   const renderApiDetailDrawer = () => {
     if (!selectedApi) return null;
 

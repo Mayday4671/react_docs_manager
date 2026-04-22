@@ -1,3 +1,9 @@
+/**
+ * @file LogManagement.tsx
+ * @description 操作日志管理页面，展示系统操作记录，支持多维度筛选和图表统计
+ * @module 系统管理
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Table, Button, Space, Modal, message, Tag, Card, 
@@ -14,35 +20,66 @@ import { Area, Pie, Column } from '@ant-design/plots';
 
 const { RangePicker } = DatePicker;
 
+/**
+ * 操作日志数据结构
+ */
 interface Log {
+  /** 日志唯一 ID */
   id: number;
+  /** 所属模块名称 */
   module: string;
+  /** 操作类型：CREATE / UPDATE / DELETE / LOGIN / LOGOUT / QUERY */
   action: string;
+  /** HTTP 请求方法 */
   method?: string;
+  /** 请求 URL */
   url?: string;
+  /** 客户端 IP 地址 */
   ip?: string;
+  /** 浏览器 User-Agent */
   userAgent?: string;
+  /** 请求参数（JSON 字符串） */
   params?: string;
+  /** 操作结果描述 */
   result?: string;
+  /** 错误信息（失败时存在） */
   errorMsg?: string;
+  /** 接口耗时（毫秒） */
   costTime?: number;
+  /** 操作用户 ID */
   userId?: number;
+  /** 操作用户名 */
   username?: string;
+  /** 操作状态：1-成功 0-失败 */
   status: number;
+  /** 操作时间 */
   createdAt: string;
 }
 
+/**
+ * 操作日志管理组件
+ *
+ * 展示系统操作日志列表，提供按操作类型、状态、时间范围、关键词的多维筛选，
+ * 并通过折线图和柱状图展示近期操作趋势与模块分布。
+ */
 const LogManagement: React.FC = () => {
   const { token } = theme.useToken();
+  /** 日志列表数据 */
   const [logs, setLogs] = useState<Log[]>([]);
+  /** 表格加载状态 */
   const [loading, setLoading] = useState(false);
+  /** 日志详情弹窗是否打开 */
   const [viewModalOpen, setViewModalOpen] = useState(false);
+  /** 当前正在查看的日志详情 */
   const [viewingLog, setViewingLog] = useState<Log | null>(null);
+  /** 分页状态 */
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  /** 统计数据（成功率、趋势等） */
   const [stats, setStats] = useState<any>(null);
+  /** 统计数据加载状态 */
   const [statsLoading, setStatsLoading] = useState(false);
   
-  // 筛选条件
+  /** 筛选条件 */
   const [filters, setFilters] = useState({
     action: undefined as string | undefined,
     status: undefined as number | undefined,
@@ -50,7 +87,9 @@ const LogManagement: React.FC = () => {
     keyword: ''
   });
 
-  // 获取统计数据
+  /**
+   * 获取日志统计数据（成功率、趋势、模块分布）
+   */
   const fetchStats = async () => {
     setStatsLoading(true);
     try {
@@ -61,7 +100,11 @@ const LogManagement: React.FC = () => {
     finally { setStatsLoading(false); }
   };
 
-  // 获取日志列表
+  /**
+   * 获取日志列表（支持分页和筛选）
+   * @param page - 当前页码，默认第 1 页
+   * @param pageSize - 每页条数，默认 10 条
+   */
   const fetchLogs = async (page = 1, pageSize = 10) => {
     setLoading(true);
     try {

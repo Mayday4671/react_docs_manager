@@ -1,9 +1,22 @@
+/**
+ * @file route.ts
+ * @description 数据库统计信息 API 路由，汇总各业务表的记录数及元数据
+ * @module 系统管理 / 数据库统计
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/backend/database/prisma';
 
+/**
+ * GET /api/database/stats
+ *
+ * 并发查询各业务表的记录数，返回带有显示名称、图标、颜色、描述及路由的统计列表。
+ *
+ * @param request - Next.js 请求对象
+ * @returns 包含各表统计信息数组的 JSON 响应
+ */
 export async function GET(request: NextRequest) {
   try {
-    // 获取所有表的统计信息
     const [
       userCount,
       roleCount,

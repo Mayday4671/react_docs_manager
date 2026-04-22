@@ -1,12 +1,7 @@
 /**
- * 文档笔记 API 路由
- * 路径：/api/doc-notes
- *
- * 支持的 HTTP 方法：
- *   GET    - 获取笔记列表 或 单篇笔记详情
- *   POST   - 创建新笔记
- *   PUT    - 更新笔记（需传 id）
- *   DELETE - 删除笔记（需传 id 查询参数）
+ * @file route.ts
+ * @description 文档笔记 CRUD API 路由，支持列表查询、单篇详情、创建、更新、删除操作
+ * @module 文档笔记 / 笔记管理
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -20,11 +15,13 @@ import {
 
 /**
  * GET /api/doc-notes
+ * GET /api/doc-notes?id={id}                        → 返回单篇笔记详情
+ * GET /api/doc-notes?categoryId={id}                → 按分类过滤笔记列表
+ * GET /api/doc-notes?keyword={kw}                   → 关键词搜索（匹配标题和内容）
+ * GET /api/doc-notes?categoryId={id}&keyword={kw}   → 分类 + 关键词组合过滤
  *
- * 查询参数：
- *   id         - 指定时返回单篇笔记详情
- *   categoryId - 按分类 ID 过滤笔记列表
- *   keyword    - 关键词搜索（匹配标题和内容）
+ * @param request - Next.js 请求对象
+ * @returns 包含笔记数据（单篇或列表）的 JSON 响应
  */
 export async function GET(request: NextRequest) {
   try {
@@ -53,12 +50,17 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/doc-notes
  *
- * 请求体（JSON）：
- *   title      - 笔记标题（必填）
- *   content    - 笔记内容，markdown 文本 或 docx base64（可选）
- *   fileType   - 文件类型：'md' | 'docx'（可选，默认 md）
- *   categoryId - 所属分类 ID（必填）
- *   tags       - 标签，逗号分隔（可选）
+ * 创建新笔记。
+ *
+ * 请求体字段：
+ * - title      笔记标题（必填）
+ * - content    笔记内容，markdown 文本或 docx base64（可选）
+ * - fileType   文件类型：'md' | 'docx'（可选，默认 md）
+ * - categoryId 所属分类 ID（必填）
+ * - tags       标签，逗号分隔（可选）
+ *
+ * @param request - Next.js 请求对象，body 为笔记数据 JSON
+ * @returns 包含新建笔记记录的 JSON 响应
  */
 export async function POST(request: NextRequest) {
   try {
@@ -73,9 +75,10 @@ export async function POST(request: NextRequest) {
 /**
  * PUT /api/doc-notes
  *
- * 请求体（JSON）：
- *   id    - 要更新的笔记 ID（必填）
- *   ...   - 其余字段同 POST，均为可选，只更新传入的字段
+ * 更新指定 ID 的笔记，仅更新传入的字段。
+ *
+ * @param request - Next.js 请求对象，body 须包含 id 字段及待更新字段
+ * @returns 包含更新后笔记记录的 JSON 响应
  */
 export async function PUT(request: NextRequest) {
   try {
@@ -92,10 +95,12 @@ export async function PUT(request: NextRequest) {
 }
 
 /**
- * DELETE /api/doc-notes
+ * DELETE /api/doc-notes?id={id}
  *
- * 查询参数：
- *   id - 要删除的笔记 ID（必填）
+ * 删除指定 ID 的笔记。
+ *
+ * @param request - Next.js 请求对象，查询参数须包含 id
+ * @returns 操作结果的 JSON 响应
  */
 export async function DELETE(request: NextRequest) {
   try {

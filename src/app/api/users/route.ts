@@ -1,10 +1,19 @@
+/**
+ * @file route.ts
+ * @description 用户管理 CRUD API 路由，支持获取、创建、更新、删除操作，并记录操作日志
+ * @module 系统管理 / 用户管理
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllUsers, createUser } from '@/backend/services/userService';
 import { createLog } from '@/backend/services/logService';
 
 /**
  * GET /api/users
- * 获取用户列表
+ *
+ * 分页获取用户列表，支持按状态过滤，同时关联返回角色信息。
+ *
+ * @param request - Next.js 请求对象，支持查询参数：page / pageSize / status
+ * @returns 包含用户列表和分页信息的 JSON 响应
  */
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
@@ -56,7 +65,12 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/users
- * 创建用户
+ *
+ * 创建新用户，username 和 password 为必填字段，并记录操作日志。
+ * 注意：密码以明文传输，服务层负责加密存储。
+ *
+ * @param request - Next.js 请求对象，body 须包含 username / password 字段
+ * @returns 包含新建用户记录的 JSON 响应（HTTP 201）
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -121,7 +135,11 @@ export async function POST(request: NextRequest) {
 
 /**
  * PUT /api/users
- * 更新用户
+ *
+ * 更新指定 ID 的用户信息，并记录操作日志。
+ *
+ * @param request - Next.js 请求对象，body 须包含 id 字段及待更新字段
+ * @returns 包含更新后用户记录的 JSON 响应
  */
 export async function PUT(request: NextRequest) {
   const startTime = Date.now();
@@ -178,8 +196,12 @@ export async function PUT(request: NextRequest) {
 }
 
 /**
- * DELETE /api/users
- * 删除用户
+ * DELETE /api/users?id={id}
+ *
+ * 删除指定 ID 的用户，并记录操作日志。
+ *
+ * @param request - Next.js 请求对象，查询参数须包含 id
+ * @returns 操作结果的 JSON 响应
  */
 export async function DELETE(request: NextRequest) {
   const startTime = Date.now();

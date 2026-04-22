@@ -1,10 +1,17 @@
+/**
+ * @file page.tsx
+ * @description 应用根页面，动态加载主布局组件 LayOut，避免 SSR 导致的客户端实例问题
+ * @module 应用入口
+ */
 'use client';
 
-import React from 'react';
 import dynamic from 'next/dynamic';
 import { Spin } from 'antd';
 
-// 创建一个简单的加载组件（不使用主题，使用默认样式）
+/**
+ * 全屏加载占位组件，在 LayOut 动态加载期间显示。
+ * 不依赖主题 token，使用固定样式避免加载时的样式闪烁。
+ */
 const LoadingComponent = () => (
   <div style={{
     position: 'fixed',
@@ -24,7 +31,10 @@ const LoadingComponent = () => (
   </div>
 );
 
-// 采用动态加载以保持客户端 Canvas/Video 实例的正确初始化
+/**
+ * 动态加载主布局组件，禁用 SSR。
+ * 原因：LayOut 内含 Canvas/Video 等客户端专属 API，SSR 会导致 hydration 错误。
+ */
 const LayOut = dynamic(() => import('@/frontend/components/layout/LayOut'), {
   ssr: false,
   loading: LoadingComponent,

@@ -1,3 +1,9 @@
+/**
+ * @file ConfigManagement.tsx
+ * @description 系统配置管理页面，支持新增、编辑、删除配置项，并按类型分 Tab 展示
+ * @module 系统管理
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Table, Button, Space, Modal, Form, Input, Select, message, 
@@ -11,26 +17,50 @@ import type { ColumnsType } from 'antd/es/table';
 
 const { TextArea } = Input;
 
+/**
+ * 系统配置项数据结构
+ */
 interface Config {
+  /** 配置唯一 ID */
   id: number;
+  /** 配置键，格式如 system.name */
   configKey: string;
+  /** 配置值 */
   configValue: string;
+  /** 配置类型：system-系统配置 / business-业务配置 */
   configType: string;
+  /** 备注说明 */
   remark?: string;
+  /** 创建时间 */
   createdAt: string;
+  /** 最后更新时间 */
   updatedAt: string;
 }
 
+/**
+ * 系统配置管理组件
+ *
+ * 提供配置项的增删改查功能，支持按类型（系统/业务）分 Tab 过滤，
+ * 以及按配置键或值进行关键词搜索。
+ */
 const ConfigManagement: React.FC = () => {
+  /** 配置列表数据 */
   const [configs, setConfigs] = useState<Config[]>([]);
+  /** 表格加载状态 */
   const [loading, setLoading] = useState(false);
+  /** 新增/编辑弹窗是否打开 */
   const [isModalOpen, setIsModalOpen] = useState(false);
+  /** 当前正在编辑的配置项，null 表示新增模式 */
   const [editingConfig, setEditingConfig] = useState<Config | null>(null);
+  /** 当前激活的 Tab 标签：all / system / business */
   const [activeTab, setActiveTab] = useState<string>('all');
+  /** 搜索关键词 */
   const [searchText, setSearchText] = useState('');
   const [form] = Form.useForm();
 
-  // 获取配置列表
+  /**
+   * 从服务端获取配置列表
+   */
   const fetchConfigs = async () => {
     setLoading(true);
     try {
@@ -48,7 +78,10 @@ const ConfigManagement: React.FC = () => {
     fetchConfigs();
   }, []);
 
-  // 过滤配置
+  /**
+   * 根据当前 Tab 和搜索关键词过滤配置列表
+   * @returns 过滤后的配置数组
+   */
   const filteredConfigs = configs.filter(config => {
     const matchTab = activeTab === 'all' || config.configType === activeTab;
     const matchSearch = !searchText || 
@@ -57,7 +90,10 @@ const ConfigManagement: React.FC = () => {
     return matchTab && matchSearch;
   });
 
-  // 打开新增/编辑弹窗
+  /**
+   * 打开新增或编辑弹窗
+   * @param config - 传入时为编辑模式，不传时为新增模式
+   */
   const handleOpenModal = (config?: Config) => {
     if (config) {
       setEditingConfig(config);
@@ -69,13 +105,15 @@ const ConfigManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // 提交表单
+  /**
+   * 提交新增或编辑表单
+   */
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       
       if (editingConfig) {
-        // 更新配置
+        // 更新已有配置
         const response = await fetch('/api/configs', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -114,7 +152,10 @@ const ConfigManagement: React.FC = () => {
     }
   };
 
-  // 删除配置
+  /**
+   * 删除指定配置项
+   * @param id - 要删除的配置 ID
+   */
   const handleDelete = async (id: number) => {
     try {
       const response = await fetch(`/api/configs?id=${id}`, {
@@ -132,7 +173,7 @@ const ConfigManagement: React.FC = () => {
     }
   };
 
-  // 表格列定义
+  /** 表格列定义 */
   const columns: ColumnsType<Config> = [
     {
       title: 'ID',

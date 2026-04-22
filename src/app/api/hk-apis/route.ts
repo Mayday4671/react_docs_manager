@@ -1,3 +1,9 @@
+/**
+ * @file route.ts
+ * @description 海康威视 API 管理路由，支持 API 条目的增删改查、统计、搜索及代理调用
+ * @module 海康API / API管理
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getAllApis,
@@ -10,7 +16,16 @@ import {
   incrementApiCallCount
 } from '@/backend/services/hkApiService';
 
-// GET - 获取API列表或搜索
+/**
+ * GET /api/hk-apis
+ * GET /api/hk-apis?action=stats              → 获取 API 统计信息
+ * GET /api/hk-apis?id={id}                   → 获取单个 API 详情
+ * GET /api/hk-apis?keyword={kw}              → 关键词搜索 API
+ * GET /api/hk-apis?categoryId={id}           → 按分类过滤 API 列表
+ *
+ * @param request - Next.js 请求对象
+ * @returns 包含 API 数据（统计、单条或列表）的 JSON 响应
+ */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -19,7 +34,6 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id');
     const action = searchParams.get('action');
 
-    // 获取统计信息
     if (action === 'stats') {
       const stats = await getApiStats();
       return NextResponse.json({
@@ -28,7 +42,6 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 获取单个API详情
     if (id) {
       const api = await getApiById(parseInt(id));
       if (!api) {
@@ -43,7 +56,6 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 搜索API
     if (keyword) {
       const apis = await searchApis(keyword);
       return NextResponse.json({
@@ -52,7 +64,6 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 获取API列表
     const apis = await getAllApis(categoryId ? parseInt(categoryId) : undefined);
     return NextResponse.json({
       success: true,
@@ -67,13 +78,20 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - 创建API或增加调用次数或代理调用
+/**
+ * POST /api/hk-apis
+ * POST /api/hk-apis { action: 'proxy-call', config: {...} }    → 代理调用海康威视 API
+ * POST /api/hk-apis { action: 'increment-call', id: number }   → 增加指定 API 的调用计数
+ * POST /api/hk-apis { name, path, method, categoryId, ... }    → 创建新 API 条目
+ *
+ * @param request - Next.js 请求对象，body 为操作数据 JSON
+ * @returns 操作结果的 JSON 响应
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { action, id, config, ...apiData } = body;
 
-    // 代理调用海康威视API
     if (action === 'proxy-call') {
       if (!config || !config.baseUrl || !config.appKey || !config.appSecret || !config.path || !config.method) {
         return NextResponse.json(
@@ -84,45 +102,39 @@ export async function POST(request: NextRequest) {
 
       try {
         const { generateSignature, buildHkHeaders } = await import('@/backend/utils/hkSignature');
-        
-        // 解析 baseUrl 获取路径前缀
+
         const parsedBaseUrl = new URL(config.baseUrl);
-        const baseUrlPath = parsedBaseUrl.pathname.replace(/\/$/, ''); // 去除末尾斜杠
-        
-        // 构建完整路径用于签名和请求
-        // 如果 baseUrl 包含路径前缀（如 /artemis），需要将其加到 path 前面
+        const baseUrlPath = parsedBaseUrl.pathname.replace(/\/$/, '');
+
+        // 若 baseUrl 包含路径前缀（如 /artemis），且 path 尚未包含该前缀，则补全
         let fullPath = config.path;
         if (baseUrlPath && baseUrlPath !== '/' && !config.path.startsWith(baseUrlPath)) {
-          // path 不包含 baseUrl 的路径前缀，需要补全
           fullPath = baseUrlPath + config.path;
         }
-        
-        // 构建查询字符串（用于签名，不进行URL编码）
+
         let queryStringForSignature = '';
         let queryStringForUrl = '';
-        
+
         if (config.requestParams) {
-          // 对于签名：按字母顺序排序参数，使用原始值，不进行URL编码
+          // 按字母顺序排序参数：签名使用原始值，URL 对特殊字符编码
           const sortedKeys = Object.keys(config.requestParams).sort();
           const paramPairsForSignature: string[] = [];
           const paramPairsForUrl: string[] = [];
-          
+
           for (const key of sortedKeys) {
             const value = config.requestParams[key];
-            // 签名用：原始值
             paramPairsForSignature.push(`${key}=${value}`);
-            // URL用：对特殊字符进行编码（特别是 # 字符）
             const encodedValue = String(value).replace(/#/g, '%23');
             paramPairsForUrl.push(`${key}=${encodedValue}`);
           }
-          
+
           queryStringForSignature = paramPairsForSignature.join('&');
           queryStringForUrl = paramPairsForUrl.join('&');
         }
-        
-        // 签名时需要包含查询参数（使用未编码的版本）
+
+        // 签名路径需包含未编码的查询参数
         const signaturePath = queryStringForSignature ? `${fullPath}?${queryStringForSignature}` : fullPath;
-        
+
         console.log('路径处理:', {
           baseUrl: config.baseUrl,
           baseUrlPath,
@@ -135,27 +147,23 @@ export async function POST(request: NextRequest) {
           signaturePath,
           method: config.method
         });
-        
-        // 签名时使用完整路径（包含未编码的查询参数）
+
         const signature = generateSignature(
           signaturePath,
           config.appKey,
           config.appSecret,
           config.method
         );
-        
-        // 构建请求头
+
         const headers = buildHkHeaders(config.appKey, signature);
-        
-        // 构建完整URL（使用协议+域名+端口+完整路径）
+
         const baseOrigin = `${parsedBaseUrl.protocol}//${parsedBaseUrl.host}`;
         let requestUrl = `${baseOrigin}${fullPath}`;
-        
-        // 添加查询参数到URL（使用编码后的版本）
+
         if (queryStringForUrl) {
           requestUrl = `${requestUrl}?${queryStringForUrl}`;
         }
-        
+
         console.log('URL构建:', {
           baseOrigin,
           fullPath,
@@ -163,7 +171,6 @@ export async function POST(request: NextRequest) {
           finalUrl: requestUrl
         });
 
-        // 发送请求
         const fetchOptions: RequestInit = {
           method: config.method,
           headers,
@@ -181,28 +188,26 @@ export async function POST(request: NextRequest) {
           requestBody: config.requestBody
         });
 
-        // 对于 HTTPS 请求，需要处理自签名证书
         let response;
         const isHttps = requestUrl.startsWith('https://');
-        
+
         if (isHttps) {
-          // 使用 node:https 模块来处理自签名证书
+          // HTTPS 请求使用 node:https 模块以支持自签名证书
           const https = require('https');
           const { URL } = require('url');
           const parsedUrl = new URL(requestUrl);
-          
+
           const options = {
             hostname: parsedUrl.hostname,
             port: parsedUrl.port || 443,
             path: parsedUrl.pathname + parsedUrl.search,
             method: config.method,
             headers,
-            rejectUnauthorized: false // 忽略自签名证书
+            rejectUnauthorized: false
           };
-          
+
           console.log('HTTPS请求选项:', options);
-          
-          // 使用 Promise 包装 https.request
+
           const httpsResponse = await new Promise<any>((resolve, reject) => {
             const req = https.request(options, (res: any) => {
               let data = '';
@@ -210,7 +215,6 @@ export async function POST(request: NextRequest) {
                 data += chunk;
               });
               res.on('end', () => {
-                // 创建一个兼容的 headers 对象
                 const headersObj = {
                   get: (name: string) => res.headers[name.toLowerCase()],
                   has: (name: string) => name.toLowerCase() in res.headers,
@@ -220,7 +224,7 @@ export async function POST(request: NextRequest) {
                     });
                   }
                 };
-                
+
                 resolve({
                   ok: res.statusCode >= 200 && res.statusCode < 300,
                   status: res.statusCode,
@@ -231,21 +235,21 @@ export async function POST(request: NextRequest) {
                 });
               });
             });
-            
+
             req.on('error', reject);
-            
+
             if (fetchOptions.body) {
               req.write(fetchOptions.body);
             }
-            
+
             req.end();
           });
-          
+
           response = httpsResponse;
         } else {
           response = await fetch(requestUrl, fetchOptions);
         }
-        
+
         let responseData;
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
@@ -275,7 +279,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 增加API调用次数
     if (action === 'increment-call') {
       if (!id) {
         return NextResponse.json(
@@ -283,7 +286,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       const api = await incrementApiCallCount(id);
       return NextResponse.json({
         success: true,
@@ -292,7 +295,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 创建API
     const { name, path, method, categoryId } = apiData;
 
     if (!name || !path || !method || !categoryId) {
@@ -318,7 +320,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT - 更新API
+/**
+ * PUT /api/hk-apis
+ *
+ * 更新指定 ID 的 API 条目。
+ *
+ * @param request - Next.js 请求对象，body 须包含 id 字段及待更新字段
+ * @returns 包含更新后 API 记录的 JSON 响应
+ */
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
@@ -347,7 +356,14 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE - 删除API
+/**
+ * DELETE /api/hk-apis?id={id}
+ *
+ * 删除指定 ID 的 API 条目。
+ *
+ * @param request - Next.js 请求对象，查询参数须包含 id
+ * @returns 操作结果的 JSON 响应
+ */
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
