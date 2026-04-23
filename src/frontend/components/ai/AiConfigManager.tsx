@@ -186,7 +186,7 @@ const AiConfigManager: React.FC = () => {
       ),
     },
     {
-      title: '操作', width: 140, fixed: 'right',
+      title: '操作', width: 160, fixed: 'right',
       render: (_, r) => (
         <Space size={4}>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleOpen(r)}>编辑</Button>

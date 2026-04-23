@@ -4,14 +4,14 @@
  * @module 系统管理
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Table, Button, Space, Modal, Form, Input, Select, App,
-  Tag, Popconfirm, Card, Row, Col, Statistic 
+  Tag, Popconfirm, Card, Row, Col, Statistic, Avatar, Tooltip, Spin,
 } from 'antd';
 import { 
   UserOutlined, PlusOutlined, EditOutlined, DeleteOutlined,
-  SearchOutlined, ReloadOutlined, UserAddOutlined
+  ReloadOutlined, CameraOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { usePermission } from '@/frontend/context/AuthContext';
@@ -69,10 +69,45 @@ const UserManagement: React.FC = () => {
 
   /** 角色列表（用于下拉选择） */
   const [roles, setRoles] = useState<Array<{ id: number; roleName: string }>>([]);
+  /** 头像上传加载状态 */
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  /** 当前编辑用户的头像预览 URL */
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
+  /** 隐藏的文件输入 ref */
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch('/api/roles').then(r => r.json()).then(d => { if (d.data) setRoles(d.data); });
   }, []);
+
+  /**
+   * 上传头像文件，成功后更新预览和表单值
+   * @param e - 文件输入变更事件
+   */
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'avatar');
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success) {
+        setAvatarPreview(data.url);
+        form.setFieldValue('avatar', data.url);
+        message.success('头像上传成功');
+      } else {
+        message.error(data.error || '上传失败');
+      }
+    } catch {
+      message.error('上传失败');
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
 
   /**
    * 获取用户列表
@@ -109,12 +144,13 @@ const UserManagement: React.FC = () => {
   const handleOpenModal = (user?: User) => {
     if (user) {
       setEditingUser(user);
-      // 编辑时不回填密码（避免哈希密码被当作新密码提交）
       const { ...rest } = user as any;
       form.setFieldsValue({ ...rest, password: '' });
+      setAvatarPreview((user as any).avatar || '');
     } else {
       setEditingUser(null);
       form.resetFields();
+      setAvatarPreview('');
     }
     setIsModalOpen(true);
   };
@@ -193,9 +229,14 @@ const UserManagement: React.FC = () => {
       title: '用户名',
       dataIndex: 'username',
       key: 'username',
-      render: (text) => (
+      render: (text, record: any) => (
         <Space>
-          <UserOutlined />
+          <Avatar
+            size={32}
+            src={record.avatar}
+            icon={<UserOutlined />}
+            style={{ flexShrink: 0 }}
+          />
           <span>{text}</span>
         </Space>
       )
@@ -375,6 +416,42 @@ const UserManagement: React.FC = () => {
             ]}
           >
             <Input placeholder="请输入手机号" />
+          </Form.Item>
+
+          <Form.Item label="头像" name="avatar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <Tooltip title="点击更换头像">
+                <div style={{ position: 'relative', cursor: 'pointer' }}
+                  onClick={() => avatarInputRef.current?.click()}>
+                  <Spin spinning={avatarUploading}>
+                    <Avatar
+                      size={64}
+                      src={avatarPreview || undefined}
+                      icon={<UserOutlined />}
+                      style={{ display: 'block' }}
+                    />
+                  </Spin>
+                  <div style={{
+                    position: 'absolute', inset: 0, borderRadius: '50%',
+                    background: 'rgba(0,0,0,0.45)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    opacity: 0, transition: 'opacity 0.2s',
+                  }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
+                  >
+                    <CameraOutlined style={{ color: '#fff', fontSize: 18 }} />
+                  </div>
+                </div>
+              </Tooltip>
+              <div>
+                <Button size="small" onClick={() => avatarInputRef.current?.click()} loading={avatarUploading}>
+                  上传头像
+                </Button>
+                <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>支持 JPG/PNG，最大 5MB</div>
+              </div>
+              <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />
+            </div>
           </Form.Item>
 
           <Form.Item label="角色" name="roleId">
