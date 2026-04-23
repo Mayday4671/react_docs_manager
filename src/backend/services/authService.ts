@@ -189,17 +189,18 @@ export async function getMe(userId: number) {
     where: { roleId: user.roleId },
     include: {
       menu: {
-        where: { status: 1 },
         select: {
           id: true, key: true, label: true, icon: true, path: true,
           component: true, parentId: true, orderNum: true, menuType: true,
-          visible: true, perms: true,
+          visible: true, perms: true, status: true,
         },
       },
     },
   });
 
-  const allMenus = roleMenus.map(rm => rm.menu);
+  const allMenus = roleMenus
+    .map(rm => rm.menu)
+    .filter(m => m.status === 1); // 过滤禁用菜单
 
   // 分离菜单（M/C）和按钮权限（F）
   const menus = allMenus.filter(m => m.menuType !== 'F' && m.visible === 1);
@@ -298,7 +299,6 @@ export async function setRoleMenus(roleId: number, menuIds: number[]) {
   if (menuIds.length > 0) {
     await prisma.sysRoleMenu.createMany({
       data: menuIds.map(menuId => ({ roleId, menuId })),
-      skipDuplicates: true,
     });
   }
 }

@@ -14,6 +14,7 @@ import {
   SearchOutlined, ReloadOutlined, UserAddOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { usePermission } from '@/frontend/context/AuthContext';
 
 /**
  * 用户数据结构
@@ -56,12 +57,13 @@ const UserManagement: React.FC = () => {
   /** 当前正在编辑的用户，null 表示新增模式 */
   const [editingUser, setEditingUser] = useState<User | null>(null);
   /** 分页配置：当前页、每页条数、总条数 */
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0
-  });
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [form] = Form.useForm();
+
+  /** 按钮权限 */
+  const canAdd = usePermission('user:add');
+  const canEdit = usePermission('user:edit');
+  const canDelete = usePermission('user:delete');
 
   /**
    * 获取用户列表
@@ -201,32 +203,17 @@ const UserManagement: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 200,
+      width: 160,
       render: (_, record) => (
-        <Space>
-          <Button 
-            type="link" 
-            size="small" 
-            icon={<EditOutlined />}
-            onClick={() => handleOpenModal(record)}
-          >
-            编辑
-          </Button>
-          <Popconfirm
-            title="确定要删除这个用户吗？"
-            onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button 
-              type="link" 
-              size="small" 
-              danger
-              icon={<DeleteOutlined />}
-            >
-              删除
-            </Button>
-          </Popconfirm>
+        <Space size={4}>
+          {canEdit && (
+            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleOpenModal(record)}>编辑</Button>
+          )}
+          {canDelete && (
+            <Popconfirm title="确定要删除这个用户吗？" onConfirm={() => handleDelete(record.id)} okText="确定" cancelText="取消">
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -276,16 +263,12 @@ const UserManagement: React.FC = () => {
       {/* 操作栏 */}
       <Card>
         <Space style={{ marginBottom: 16 }}>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => handleOpenModal()}
-          >
-            新增用户
-          </Button>
-          <Button 
-            icon={<ReloadOutlined />}
-            onClick={() => fetchUsers()}
+          {canAdd && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenModal()}>
+              新增用户
+            </Button>
+          )}
+          <Button icon={<ReloadOutlined />} onClick={() => fetchUsers()}
           >
             刷新
           </Button>

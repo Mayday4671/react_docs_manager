@@ -61,9 +61,10 @@ interface AuthContextType {
   isLoggedIn: boolean;
   /**
    * 登录方法，将 token 存入 localStorage 并刷新用户信息。
-   * @param token - 服务端返回的 JWT Token
+   * @param token    - 服务端返回的 JWT Token
+   * @param userData - 登录接口直接返回的用户数据，用于立即更新状态避免白屏
    */
-  login: (token: string) => Promise<void>;
+  login: (token: string, userData?: AuthUser) => Promise<void>;
   /** 登出方法，清除 token 和用户信息 */
   logout: () => void;
   /** 刷新当前用户信息（token 不变，重新拉取权限） */
@@ -107,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+      console.log('[AuthContext] fetchUser response:', data);
 
       if (data.success) {
         setUser(data.data.user);
@@ -133,10 +135,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   /**
    * 登录：保存 token 并拉取用户信息。
+   * 直接用登录接口返回的用户数据先设置状态，再异步拉取完整权限信息。
    * @param token - 服务端返回的 JWT Token
+   * @param userData - 登录接口直接返回的用户数据（可选，用于立即更新状态）
    */
-  const login = async (token: string) => {
+  const login = async (token: string, userData?: AuthUser) => {
     localStorage.setItem(TOKEN_KEY, token);
+    // 先用登录返回的基础用户数据立即更新，避免等待 fetchUser 的异步延迟
+    if (userData) {
+      setUser(userData);
+    }
     await fetchUser();
   };
 
