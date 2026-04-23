@@ -19,6 +19,7 @@ import HkApiDocs from '@/frontend/components/hk/HkApiDocs';
 import DocNotes from '@/frontend/components/docs/DocNotes';
 import MenuManagement from '@/frontend/components/system/MenuManagement';
 import ProfilePage from '@/frontend/components/auth/ProfilePage';
+import AiChat from '@/frontend/components/ai/AiChat';
 
 /** 临时占位组件：用户数据模块，后续可继续标准化迁移 */
 const UserData = () => <div>用户数据模块 (标准化准备中)</div>;
@@ -52,6 +53,7 @@ const componentMap: Record<string, React.ComponentType> = {
     'doc-notes': DocNotes,
     'menu-management': MenuManagement,
     'profile': ProfilePage,
+    'ai-chat': AiChat,
 };
 
 /**

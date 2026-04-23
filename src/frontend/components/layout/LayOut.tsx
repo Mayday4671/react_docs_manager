@@ -30,6 +30,7 @@ import {
   FolderOpenOutlined,
   BookOutlined,
   SearchOutlined,
+  RobotOutlined,
 } from "@ant-design/icons";
 import { Button, Layout, Menu, theme, Tabs, Breadcrumb, Spin, Tooltip, Avatar, Dropdown } from "antd";
 import type { MenuProps } from 'antd';
@@ -87,6 +88,7 @@ const iconMap: Record<string, React.ReactNode> = {
     ApiOutlined: <ApiOutlined />,
     FolderOpenOutlined: <FolderOpenOutlined />,
     BookOutlined: <BookOutlined />,
+    RobotOutlined: <RobotOutlined />,
 };
 
 /**

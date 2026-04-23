@@ -571,7 +571,7 @@ const MenuManagement: React.FC = () => {
         onOk={handleSubmit}
         okText={editingMenu ? '保存' : '创建'}
         width={600}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <Row gutter={16}>

@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Table, Button, Space, Modal, Form, Input, Select, message, 
+  Table, Button, Space, Modal, Form, Input, Select, App,
   Tag, Popconfirm, Card, Row, Col, Statistic 
 } from 'antd';
 import { 
@@ -65,6 +65,15 @@ const UserManagement: React.FC = () => {
   const canEdit = usePermission('user:edit');
   const canDelete = usePermission('user:delete');
 
+  const { message } = App.useApp();
+
+  /** 角色列表（用于下拉选择） */
+  const [roles, setRoles] = useState<Array<{ id: number; roleName: string }>>([]);
+
+  useEffect(() => {
+    fetch('/api/roles').then(r => r.json()).then(d => { if (d.data) setRoles(d.data); });
+  }, []);
+
   /**
    * 获取用户列表
    * @param page - 当前页码，默认第 1 页
@@ -100,7 +109,9 @@ const UserManagement: React.FC = () => {
   const handleOpenModal = (user?: User) => {
     if (user) {
       setEditingUser(user);
-      form.setFieldsValue(user);
+      // 编辑时不回填密码（避免哈希密码被当作新密码提交）
+      const { ...rest } = user as any;
+      form.setFieldsValue({ ...rest, password: '' });
     } else {
       setEditingUser(null);
       form.resetFields();
@@ -117,23 +128,33 @@ const UserManagement: React.FC = () => {
       const values = await form.validateFields();
       
       if (editingUser) {
-        // 更新用户（暂未实现API）
-        message.info('更新功能开发中...');
+        const response = await fetch('/api/users', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingUser.id, ...values })
+        });
+        const data = await response.json();
+        if (data.success) {
+          message.success('用户更新成功');
+          setIsModalOpen(false);
+          fetchUsers();
+        } else {
+          message.error(data.message || '用户更新失败');
+        }
       } else {
-        // 创建用户
         const response = await fetch('/api/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(values)
         });
-        
-        if (response.ok) {
+        const data = await response.json();
+        if (data.success || response.ok) {
           message.success('用户创建成功');
           setIsModalOpen(false);
           form.resetFields();
           fetchUsers();
         } else {
-          message.error('用户创建失败');
+          message.error(data.message || '用户创建失败');
         }
       }
     } catch (error) {
@@ -146,7 +167,18 @@ const UserManagement: React.FC = () => {
    * @param id - 要删除的用户 ID
    */
   const handleDelete = async (id: number) => {
-    message.info('删除功能开发中...');
+    try {
+      const response = await fetch(`/api/users?id=${id}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (data.success) {
+        message.success('用户删除成功');
+        fetchUsers();
+      } else {
+        message.error(data.message || '用户删除失败');
+      }
+    } catch {
+      message.error('用户删除失败');
+    }
   };
 
   /** 表格列定义 */
@@ -315,14 +347,14 @@ const UserManagement: React.FC = () => {
           </Form.Item>
 
           <Form.Item
-            label="密码"
+            label={editingUser ? '密码（不填则不修改）' : '密码'}
             name="password"
             rules={[
               { required: !editingUser, message: '请输入密码' },
               { min: 6, message: '密码至少6位' }
             ]}
           >
-            <Input.Password placeholder="请输入密码" />
+            <Input.Password placeholder={editingUser ? '不填则保持原密码不变' : '请输入密码'} />
           </Form.Item>
 
           <Form.Item
@@ -345,13 +377,11 @@ const UserManagement: React.FC = () => {
             <Input placeholder="请输入手机号" />
           </Form.Item>
 
-          <Form.Item
-            label="角色"
-            name="roleId"
-          >
-            <Select placeholder="请选择角色">
-              <Select.Option value={1}>超级管理员</Select.Option>
-              <Select.Option value={2}>普通用户</Select.Option>
+          <Form.Item label="角色" name="roleId">
+            <Select placeholder="请选择角色" allowClear>
+              {roles.map(r => (
+                <Select.Option key={r.id} value={r.id}>{r.roleName}</Select.Option>
+              ))}
             </Select>
           </Form.Item>
 

@@ -156,7 +156,22 @@ export async function PUT(request: NextRequest) {
     }
 
     const { updateUser } = await import('@/backend/services/userService');
-    const user = await updateUser(id, data);
+    const { hashPassword } = await import('@/backend/services/authService');
+
+    // 只取允许更新的字段，过滤掉 role 关联对象、时间戳等 Prisma 不接受的字段
+    const updateData: any = {};
+    if (data.username !== undefined) updateData.username = data.username;
+    if (data.email !== undefined) updateData.email = data.email || null;
+    if (data.phone !== undefined) updateData.phone = data.phone || null;
+    if (data.avatar !== undefined) updateData.avatar = data.avatar || null;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.roleId !== undefined) updateData.roleId = data.roleId || null;
+    // 密码不为空时才更新，且需要加密
+    if (data.password && data.password.trim()) {
+      updateData.password = await hashPassword(data.password);
+    }
+
+    const user = await updateUser(id, updateData);
 
     // 记录日志
     await createLog({

@@ -240,7 +240,21 @@ model DocNote {
 }
 
 // ============================================
-// 海康威视 API 相关表 (hk_*)
+// AI 模型配置表
+model AiModelConfig {
+  id          Int      @id @default(autoincrement())
+  name        String   // 配置名称，如「智谱-GLM4」
+  provider    String   // 厂商标识：openai / zhipu / deepseek / qwen / custom
+  baseUrl     String   // API Base URL
+  apiKeyEnc   String   // AES-256-GCM 加密后的 API Key（格式：iv:authTag:ciphertext，均为 hex）
+  models      String   // 支持的模型列表，JSON 数组字符串，如 ["glm-4","embedding-3"]
+  defaultModel String? // 默认选中的模型
+  status      Int      @default(1) // 1:启用 0:禁用
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("ai_model_config")
+}
 // ============================================
 
 // 海康API分类表
