@@ -11,13 +11,12 @@ node_modules/
 out/
 
 # env files
-.env
+# .env 已移出忽略，允许提交（包含项目运行所需配置）
 .env.local
 .env.*.local
 
 # database
-*.db
-*.db-journal
+# *.db 已移出忽略，允许提交数据库文件
 
 # OS
 .DS_Store
